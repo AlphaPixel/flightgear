@@ -211,6 +211,7 @@ option(ENABLE_HID_INPUT  "Set to ON to build HID-based input code" ${EVENT_INPUT
 option(ENABLE_PLIB_JOYSTICK  "Set to ON to enable legacy joystick code (default)" ON)
 option(ENABLE_COMPOSITOR "Set to ON to enable the Compositor-based Viewer" OFF)
 option(ENABLE_SWIFT      "Set to ON to build the swift module" ON)
+option(ENABLE_OPENDIS    "Set to ON to build the OpenDIS module" ON)
 
 
 # Test-suite options.
@@ -612,6 +613,10 @@ configure_file (
     "${PROJECT_SOURCE_DIR}/src/Include/version.h.cmake-in"
     "${PROJECT_BINARY_DIR}/src/Include/version.h"
 )
+
+if (ENABLE_OPENDIS)
+    find_package(OpenDIS)
+endif()
 
 # Setup build.h header, each build
 include( GenerateBuildInfo )
