@@ -1,9 +1,11 @@
 set(SOURCES 
-    opendis_connection.cpp
+    opendis_manager.cpp
+    opendis_subsystem.cpp
 )
 
 set(HEADERS
-    opendis_connection.h
+    opendis_manager.h
+    opendis_subsystem.h
 )
 
 flightgear_component(OpenDIS "${SOURCES}" "${HEADERS}")

@@ -1,4 +1,4 @@
-// opendis_connection.h
+// opendis_subsystem.h
 //
 // Copyright (C) 2021 - AlphaPixel (http://www.alphapixel.com)
 
@@ -6,11 +6,13 @@
 
 #include <simgear/structure/subsystem_mgr.hxx>
 
-class OpenDIS7Connection : public SGSubsystem
+class OpenDISManager;
+
+class OpenDISSubsystem : public SGSubsystem
 {
 public:
-    OpenDIS7Connection();
-    ~OpenDIS7Connection();
+    OpenDISSubsystem();
+    ~OpenDISSubsystem();
 
     // Subsystem API.
     void init() override;
@@ -19,14 +21,14 @@ public:
     void update(double delta_time_sec) override;
 
     // Subsystem identification.
-    static const char* staticSubsystemClassId() { return "opendis7"; }
+    static const char* staticSubsystemClassId() { return "OpenDIS"; }
 
     bool startServer(const SGPropertyNode* arg, SGPropertyNode* root);
     bool stopServer(const SGPropertyNode* arg, SGPropertyNode* root);
 
-//    std::unique_ptr<FGSwiftBus::CPlugin> plug{};
-
 private:
     bool serverRunning = false;
     bool initialized = false;
+
+    std::unique_ptr<OpenDISManager> m_manager;
 };
