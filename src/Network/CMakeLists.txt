@@ -22,6 +22,7 @@ set(SOURCES
 	native_fdm.cxx
 	native_gui.cxx
 	nmea.cxx
+	OpenDIS.cxx
 	opengc.cxx
 	props.cxx
 	protocol.cxx
@@ -52,6 +53,7 @@ set(HEADERS
 	native_fdm.hxx
 	native_gui.hxx
 	nmea.hxx
+	OpenDIS.hxx
 	opengc.hxx
 	props.hxx
 	protocol.hxx
@@ -65,6 +67,11 @@ if(ENABLE_IAX)
     list(APPEND HEADERS fgcom.hxx)
 endif()
    	
+if(ENABLE_OPENDIS)
+	list(APPEND SOURCES OpenDIS.cxx)
+	list(APPEND HEADERS OpenDIS.hxx)
+endif()
+
 flightgear_component(Network "${SOURCES}" "${HEADERS}")
 
 if(RTI_FOUND)

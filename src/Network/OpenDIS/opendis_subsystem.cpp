@@ -19,20 +19,20 @@
 // #include <simgear/structure/event_mgr.hxx>
 // #include <simgear/timing/timestamp.hxx>
 
-bool OpenDISSubsystem::startServer(const SGPropertyNode* arg, SGPropertyNode* root)
+bool OpenDISSubsystem::startManager(const SGPropertyNode* arg, SGPropertyNode* root)
 {
     m_manager = OpenDISManager::create();
 
-    serverRunning = true;
-    fgSetBool("/sim/opendis/serverRunning", true);
+    managerRunning = true;
+    fgSetBool("/sim/opendis/managerRunning", true);
 
     return true;
 }
 
-bool OpenDISSubsystem::stopServer(const SGPropertyNode* arg, SGPropertyNode* root)
+bool OpenDISSubsystem::stopManager(const SGPropertyNode* arg, SGPropertyNode* root)
 {
-    fgSetBool("/sim/opendis/serverRunning", false);
-    serverRunning = false;
+    fgSetBool("/sim/opendis/managerRunning", false);
+    managerRunning = false;
 
     m_manager.reset();
 
@@ -48,7 +48,7 @@ OpenDISSubsystem::~OpenDISSubsystem()
 {
     shutdown();
 
-    if (serverRunning) 
+    if (managerRunning) 
     {
     }
 }
@@ -57,8 +57,8 @@ void OpenDISSubsystem::init()
 {
     if (!initialized) 
     {
-        globals->get_commands()->addCommand("opendisStart", this, &OpenDISSubsystem::startServer);
-        globals->get_commands()->addCommand("opendisStop", this, &OpenDISSubsystem::stopServer);
+        globals->get_commands()->addCommand("opendisStart", this, &OpenDISSubsystem::startManager);
+        globals->get_commands()->addCommand("opendisStop", this, &OpenDISSubsystem::stopManager);
 
         fgSetBool("/sim/opendis/available", true);
         initialized = true;
@@ -67,7 +67,7 @@ void OpenDISSubsystem::init()
 
 void OpenDISSubsystem::update(double delta_time_sec)
 {
-    if (serverRunning) 
+    if (managerRunning) 
     {
         m_manager->update(delta_time_sec);
     }

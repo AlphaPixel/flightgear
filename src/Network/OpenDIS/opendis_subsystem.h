@@ -23,11 +23,11 @@ public:
     // Subsystem identification.
     static const char* staticSubsystemClassId() { return "OpenDIS"; }
 
-    bool startServer(const SGPropertyNode* arg, SGPropertyNode* root);
-    bool stopServer(const SGPropertyNode* arg, SGPropertyNode* root);
+    bool startManager(const SGPropertyNode* arg, SGPropertyNode* root);
+    bool stopManager(const SGPropertyNode* arg, SGPropertyNode* root);
 
 private:
-    bool serverRunning = false;
+    bool managerRunning = false;
     bool initialized = false;
 
     std::unique_ptr<OpenDISManager> m_manager;

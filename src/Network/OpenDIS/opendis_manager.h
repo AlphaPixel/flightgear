@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2021 - AlphaPixel (http://www.alphapixel.com)
 #include <memory>
+#include <FDM/flightProperties.hxx>
 
 class OpenDISManager
 {
@@ -13,4 +14,7 @@ public:
 
 private:
     OpenDISManager();
+
+    // m_flightProperties are used to retrieve all "ownship" properties for emitting via OpenDIS.
+    std::unique_ptr<FlightProperties> m_flightProperties;
 };

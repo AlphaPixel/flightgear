@@ -46,6 +46,9 @@
 #include <Network/AV400.hxx>
 #include <Network/AV400Sim.hxx>
 #include <Network/AV400WSim.hxx>
+#ifdef ENABLE_OPENDIS
+#include <Network/OpenDIS.hxx>
+#endif
 #include <Network/flarm.hxx>
 #include <Network/garmin.hxx>
 #include <Network/igc.hxx>
@@ -158,6 +161,10 @@ FGIO::parse_port_config( const string_list& tokens )
             io = new FGRAY;
         } else if ( protocol == "rul" ) {
             io = new FGRUL;
+#ifdef ENABLE_OPENDIS            
+        } else if ( protocol == "dis" ) {
+            io = new FGOpenDIS;
+#endif            
         } else if ( protocol == "generic" ) {
             FGGeneric *generic = new FGGeneric( tokens );
             if (!generic->getInitOk())

@@ -1812,6 +1812,7 @@ struct OptionDesc {
     {"AV400Sim",                     true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"AV400WSimA",                   true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"AV400WSimB",                   true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
+    {"dis",                          true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"flarm",                        true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"garmin",                       true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"igc",                          true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
