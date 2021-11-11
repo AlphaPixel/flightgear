@@ -23,6 +23,8 @@
 
 #include "protocol.hxx"
 
+#include <utils/IncomingMessage.h>                 // for library usage
+
 class FlightProperties;
 
 class FGOpenDIS : public FGProtocol 
@@ -43,6 +45,7 @@ public:
 private:
     std::unique_ptr<FlightProperties> m_flightProperties;
     std::vector<char> m_ioBuffer;
+    std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;
 };
 
 #endif // _FG_OPENDIS_HXX

@@ -125,6 +125,10 @@ if (TARGET sentry_crashpad::handler)
     endif()
 endif()
 
+if (ENABLE_OPENDIS)
+    target_link_libraries(fgfs OpenDIS6::OpenDIS6)
+endif()
+
 if(ENABLE_METAR)
     add_executable(metar metar_main.cxx)
     target_link_libraries(metar

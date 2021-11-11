@@ -33,7 +33,11 @@
 
 #include "OpenDIS.hxx"
 
-FGOpenDIS::FGOpenDIS() 
+// OpenDIS headers
+#include <dis6/EntityStatePdu.h>
+
+FGOpenDIS::FGOpenDIS()
+	: m_incomingMessage(new DIS::IncomingMessage)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
 }
