@@ -25,5 +25,5 @@ file(GLOB OPENDIS_SERVER_SOURCES
 # Define ExampleSender Executable
 add_executable(OpenDISServer ${OPENDIS_SERVER_SOURCES})
 # Link OpenDIS into ExampleSender
-target_link_libraries(OpenDISServer PRIVATE OpenDIS6::OpenDIS6)
+target_link_libraries(OpenDISServer PRIVATE OpenDIS6::OpenDIS6 SimGearCore)
 

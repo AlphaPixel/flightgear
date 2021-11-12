@@ -2,8 +2,7 @@
 
 #include <string>                        // for param
 #include <cstddef>                       // for size_t definition
-
-#include <sg_socket_udp.hxx>
+#include <simgear/io/sg_socket.hxx>
 
 namespace Example
 {
