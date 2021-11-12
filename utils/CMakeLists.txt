@@ -35,6 +35,10 @@ if(ENABLE_TRAFFIC)
     add_subdirectory(traffic)
 endif()
 
+if(ENABLE_OPENDIS)
+    add_subdirectory(opendis_server)
+endif()
+
 if (ENABLE_FGQCANVAS)
     if(Qt5Core_VERSION VERSION_EQUAL 5.7 OR Qt5Core_VERSION VERSION_GREATER 5.7)
         add_subdirectory(fgqcanvas)

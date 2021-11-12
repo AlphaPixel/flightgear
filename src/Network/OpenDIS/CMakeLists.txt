@@ -1,11 +1,9 @@
-set(SOURCES 
-    opendis_manager.cpp
-    opendis_subsystem.cpp
+set(SOURCES
+    EntityStateProcessor.cxx
 )
 
 set(HEADERS
-    opendis_manager.h
-    opendis_subsystem.h
+    EntityStateProcessor.hxx
 )
 
 flightgear_component(OpenDIS "${SOURCES}" "${HEADERS}")

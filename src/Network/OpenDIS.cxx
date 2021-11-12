@@ -32,14 +32,19 @@
 #include <Main/globals.hxx>
 
 #include "OpenDIS.hxx"
+#include "OpenDIS/EntityStateProcessor.hxx"
 
 // OpenDIS headers
 #include <dis6/EntityStatePdu.h>
 
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
+	, m_entityStateProcessor(new EntityStateProcessor)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
+
+	const unsigned char es_pdu_type = 1;	// REVIEW: What's this used for?
+	m_incomingMessage->AddProcessor(es_pdu_type, m_entityStateProcessor.get());
 }
 
 FGOpenDIS::~FGOpenDIS()
@@ -53,6 +58,8 @@ bool FGOpenDIS::gen_message()
 
 bool FGOpenDIS::parse_message() 
 {
+	// Unmarshal the message in m_ioBuffer
+	m_incomingMessage->Process(&m_ioBuffer[0], m_ioBuffer.size(), DIS::BIG);
     return true;
 }
 

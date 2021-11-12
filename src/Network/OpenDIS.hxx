@@ -25,6 +25,8 @@
 
 #include <utils/IncomingMessage.h>                 // for library usage
 
+
+class EntityStateProcessor;
 class FlightProperties;
 
 class FGOpenDIS : public FGProtocol 
@@ -43,9 +45,10 @@ public:
     bool close();
 
 private:
-    std::unique_ptr<FlightProperties> m_flightProperties;
     std::vector<char> m_ioBuffer;
     std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;
+    std::unique_ptr<EntityStateProcessor> m_entityStateProcessor;
+    std::unique_ptr<FlightProperties> m_flightProperties;
 };
 
 #endif // _FG_OPENDIS_HXX
