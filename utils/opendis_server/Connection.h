@@ -2,32 +2,23 @@
 
 #include <string>                        // for param
 #include <cstddef>                       // for size_t definition
-#include <simgear/io/sg_socket.hxx>
+#include <memory>
+#include <simgear/io/raw_socket.hxx>
 
 namespace Example
 {
-   /// the value for a typical ethernet connection's maximum transfer unit.
-   const unsigned int MTU_SIZE = 1500;
-
-   /// makes a multicast connection to support DIS networks.
-   /// requires the HawkNL socket library.
-   /// http://www.hawksoft.com/hawknl/
    class Connection
    {
    public:
-      void Connect(unsigned int port, const std::string& host, bool listen);
+      void Connect(const std::string& host, int port);
       void Disconnect();
 
-      void Send(const char* buf, size_t numbytes);
-
-      /// allocates buf with size numbytes.
-      /// @param buf the buffer to be written to with network bytes
-      /// @param numbytes the maximum index used for the buffer (buf)
-      /// @return the number of bytes read from the connection
-      size_t Receive(char* buf);
+      void Send(const char* buf, int numbytes);
 
    private:
       void HandleError();
+
+      std::unique_ptr<simgear::Socket> m_socket;
    };
 }
 

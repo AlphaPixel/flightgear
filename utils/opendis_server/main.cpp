@@ -292,17 +292,17 @@ void UpdateTank(DIS::EntityStatePdu& tank, Example::TankDynamics& dynamics, doub
 
 int main(int argc, char* argv[])
 {
-   unsigned int port(62040);
+   unsigned int port(3000);
    std::string ip("224.0.0.1");
    if( argc > 2 )
    {
-      port = Example::ToType<unsigned int>( argv[1] );
-      ip = argv[2];
+      ip = argv[1];
+      port = Example::ToType<unsigned int>( argv[2] );
    }
 
    /// the basic pieces for sending data
    Example::Connection broadcast;
-   broadcast.Connect( port , ip , false);
+   broadcast.Connect(ip, port);
    DIS::DataStream buffer( DIS::BIG );
 
    DIS::EntityStatePdu enemy;
@@ -386,7 +386,7 @@ int main(int argc, char* argv[])
       // increase for next frame
       frame_stamp++;
 
-      Example::sleep( 10000 );
+      Example::sleep( 1000 );
    }
 
    broadcast.Disconnect();
