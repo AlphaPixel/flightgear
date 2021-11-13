@@ -58,7 +58,6 @@ bool FGOpenDIS::gen_message()
 
 bool FGOpenDIS::parse_message() 
 {
-	// Unmarshal the message in m_ioBuffer
 	m_incomingMessage->Process(&m_ioBuffer[0], m_ioBuffer.size(), DIS::BIG);
     return true;
 }
@@ -107,12 +106,7 @@ bool FGOpenDIS::process()
 		if (length > 0)
 		{
 			m_ioBuffer.resize(length);
-			SG_LOG(SG_IO, SG_ALERT, "Success reading data.");
-			if(parse_message()) 
-			{
-				SG_LOG(SG_IO, SG_ALERT, "Success parsing data.");
-			} 
-			else 
+			if(!parse_message()) 
 			{
 				SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
 			}
