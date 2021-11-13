@@ -6,6 +6,7 @@ include (CheckCSourceCompiles)
 include (CheckCXXSourceCompiles)
 include (CheckIncludeFile)
 include (CheckIncludeFileCXX)
+include (FetchContent)
 
 if(COMMAND cmake_policy)
    if(POLICY CMP0054)
@@ -421,6 +422,15 @@ set(FG_VERSION_PATCH ${CMAKE_MATCH_3})
 
 set(MIN_SIMGEAR_VERSION "${FG_VERSION_MAJOR}.${FG_VERSION_MINOR}.0")
 message(STATUS "Min Simgear version is ${MIN_SIMGEAR_VERSION}")
+
+# Fetch OpenDIS
+FetchContent_Declare(
+    OpenDIS
+    GIT_REPOSITORY https://github.com/AlphaPixel/open-dis-cpp.git
+    GIT_TAG 8503ac98dfbbfa3a8f8c19720d4c3d720894b96d
+)
+
+FetchContent_MakeAvailable(OpenDIS)
 
 find_package(SimGear ${MIN_SIMGEAR_VERSION} CONFIG REQUIRED)
 
