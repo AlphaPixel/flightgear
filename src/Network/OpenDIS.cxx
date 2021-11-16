@@ -27,9 +27,10 @@
 //#include <simgear/math/sg_geodesy.hxx>
 #include <simgear/io/iochannel.hxx>
 #include <simgear/timing/sg_time.hxx>
-
+#include <simgear/io/sg_socket.hxx>
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
+#include <FDM/JSBSim/math/FGLocation.h>
 
 #include "OpenDIS.hxx"
 #include "OpenDIS/EntityStateProcessor.hxx"
@@ -37,14 +38,16 @@
 // OpenDIS headers
 #include <dis6/EntityStatePdu.h>
 
+#include "OpenDIS/EntityTypes.hxx"
+
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
 	, m_entityStateProcessor(new EntityStateProcessor)
+	, m_ownshipType(Specific_SIKORSKY_S70A::UH_60A_BLACKHAWK, CountryCode::UNITED_STATES)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
 
-	const unsigned char es_pdu_type = 1;	// REVIEW: What's this used for?
-	m_incomingMessage->AddProcessor(es_pdu_type, m_entityStateProcessor.get());
+	m_incomingMessage->AddProcessor(static_cast<unsigned char>(PDUType::ENTITY_STATE), m_entityStateProcessor.get());
 }
 
 FGOpenDIS::~FGOpenDIS()
@@ -82,6 +85,10 @@ bool FGOpenDIS::open()
 		    set_enabled(true);
 		}
 	}		
+
+	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));
+
+	init_ownship();
 
     return openedSuccessfully;
 }
@@ -123,7 +130,7 @@ bool FGOpenDIS::process()
 		}
     }
 
-    return true;
+	return process_outgoing();
 }
 
 bool FGOpenDIS::close() 
@@ -138,4 +145,46 @@ bool FGOpenDIS::close()
     }
 
     return true;
+}
+
+void FGOpenDIS::init_ownship()
+{
+	m_ownshipID.setSite(0);
+    m_ownshipID.setApplication(1);
+    m_ownshipID.setEntity(1);
+
+	m_ownship.setProtocolVersion(6);
+	m_ownship.setExerciseID(0);
+	m_ownship.setEntityID(m_ownshipID);
+	m_ownship.setEntityType(m_ownshipType);
+}
+
+bool FGOpenDIS::process_outgoing()
+{
+#if 0
+	const auto latitude = m_flightProperties->get_Latitude();
+	const auto longitude = m_flightProperties->get_Longitude();
+	const auto altitude_in_feet = m_flightProperties->get_Altitude();
+
+	// Use JSBSim::FGLocation to determine the ECEF coordinates of the lat, lon, alt.
+	JSBSim::FGLocation location;
+	location.SetPositionGeodetic(longitude, latitude, altitude_in_feet);
+
+	// Determine the velocity vector
+	DIS::Vector3Float velocity;
+
+
+	// Update ownship from flight dynamics
+	DIS::Vector3Double position;
+	position.setX(location(1));	// NOTE: FGLocation indices start at 1.
+	position.setY(location(2));
+	position.setZ(location(3));
+
+	m_ownship.setEntityLocation(position);
+	m_ownship.setEntityOrientation(dynamics.orientation);
+	m_ownship.setEntityLinearVelocity(dynamics.velocity);
+	m_ownship.setTimestamp(frame_stamp);
+#endif
+
+	return true;
 }

@@ -23,11 +23,13 @@
 
 #include "protocol.hxx"
 
+#include <dis6/EntityStatePdu.h>
 #include <utils/IncomingMessage.h>                 // for library usage
-
+#include "OpenDIS/EntityTypes.hxx"
 
 class EntityStateProcessor;
 class FlightProperties;
+class SGSocket;
 
 class FGOpenDIS : public FGProtocol 
 {
@@ -38,17 +40,24 @@ public:
     bool gen_message();
     bool parse_message();
  
-    bool open();
+    bool open() override;
 
-    bool process();
+    bool process() override;
 
-    bool close();
+    bool close() override;
 
 private:
+    void init_ownship();
+    bool process_outgoing();
+
     std::vector<char> m_ioBuffer;
     std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;
     std::unique_ptr<EntityStateProcessor> m_entityStateProcessor;
     std::unique_ptr<FlightProperties> m_flightProperties;
+    std::unique_ptr<SGSocket> m_outgoingSocket;
+    DIS::EntityStatePdu m_ownship;
+    DIS::EntityID m_ownshipID;
+    SikorskyS70AHelicopter m_ownshipType;
 };
 
 #endif // _FG_OPENDIS_HXX
