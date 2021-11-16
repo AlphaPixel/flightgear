@@ -23,8 +23,6 @@
 #endif
 
 #include <FDM/flightProperties.hxx>
-//#include <simgear/debug/logstream.hxx>
-//#include <simgear/math/sg_geodesy.hxx>
 #include <simgear/io/iochannel.hxx>
 #include <simgear/timing/sg_time.hxx>
 #include <simgear/io/sg_socket.hxx>
@@ -43,7 +41,7 @@
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
 	, m_entityStateProcessor(new EntityStateProcessor)
-	, m_ownshipType(Specific_SIKORSKY_S70A::UH_60A_BLACKHAWK, CountryCode::UNITED_STATES)
+	, m_ownshipType(Specific_SIKORSKY_S70A::UH60A_BLACKHAWK)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
 
