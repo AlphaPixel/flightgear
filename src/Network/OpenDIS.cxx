@@ -41,6 +41,7 @@
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
 	, m_entityStateProcessor(new EntityStateProcessor)
+	, m_flightProperties(new FlightProperties)
 	, m_ownshipType(Specific_SIKORSKY_S70A::UH60A_BLACKHAWK)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
@@ -159,7 +160,6 @@ void FGOpenDIS::init_ownship()
 
 bool FGOpenDIS::process_outgoing()
 {
-#if 0
 	const auto latitude = m_flightProperties->get_Latitude();
 	const auto longitude = m_flightProperties->get_Longitude();
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
@@ -168,21 +168,23 @@ bool FGOpenDIS::process_outgoing()
 	JSBSim::FGLocation location;
 	location.SetPositionGeodetic(longitude, latitude, altitude_in_feet);
 
-	// Determine the velocity vector
-	DIS::Vector3Float velocity;
-
-
 	// Update ownship from flight dynamics
 	DIS::Vector3Double position;
 	position.setX(location(1));	// NOTE: FGLocation indices start at 1.
 	position.setY(location(2));
 	position.setZ(location(3));
 
-	m_ownship.setEntityLocation(position);
+#if 0
+	// Determine the velocity vector
+	DIS::Vector3Float velocity;
+
+
+
 	m_ownship.setEntityOrientation(dynamics.orientation);
 	m_ownship.setEntityLinearVelocity(dynamics.velocity);
 	m_ownship.setTimestamp(frame_stamp);
 #endif
+	m_ownship.setEntityLocation(position);
 
 	return true;
 }
