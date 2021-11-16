@@ -43,6 +43,7 @@ FGOpenDIS::FGOpenDIS()
 	, m_entityStateProcessor(new EntityStateProcessor)
 	, m_flightProperties(new FlightProperties)
 	, m_ownshipType(Specific_SIKORSKY_S70A::UH60A_BLACKHAWK)
+	, m_outgoingBuffer(DIS::BIG)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
 
@@ -86,6 +87,7 @@ bool FGOpenDIS::open()
 	}		
 
 	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));
+	m_outgoingSocket->open(SGProtocolDir::SG_IO_OUT);
 
 	init_ownship();
 
@@ -168,23 +170,37 @@ bool FGOpenDIS::process_outgoing()
 	JSBSim::FGLocation location;
 	location.SetPositionGeodetic(longitude, latitude, altitude_in_feet);
 
+	//
 	// Update ownship from flight dynamics
+	//
+
+	// Position
 	DIS::Vector3Double position;
 	position.setX(location(1));	// NOTE: FGLocation indices start at 1.
 	position.setY(location(2));
 	position.setZ(location(3));
 
+	m_ownship.setEntityLocation(position);
+
+
+	// Orientation
+	const auto phi = m_flightProperties->get_Phi();
+	const auto psi = m_flightProperties->get_Psi();
+	const auto theta = m_flightProperties->get_Theta();
+
+	DIS::Orientation orientation;
+	orientation.setPhi(phi);
+	orientation.setPsi(psi);
+	orientation.setTheta(theta);
+
+	m_ownship.setEntityOrientation(orientation);
 #if 0
-	// Determine the velocity vector
-	DIS::Vector3Float velocity;
-
-
-
-	m_ownship.setEntityOrientation(dynamics.orientation);
 	m_ownship.setEntityLinearVelocity(dynamics.velocity);
 	m_ownship.setTimestamp(frame_stamp);
 #endif
-	m_ownship.setEntityLocation(position);
+
+	m_ownship.marshal(m_outgoingBuffer);
+	m_outgoingSocket->write(&m_outgoingBuffer[0], m_outgoingBuffer.size());
 
 	return true;
 }

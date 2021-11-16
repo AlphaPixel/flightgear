@@ -54,7 +54,9 @@ private:
     std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;
     std::unique_ptr<EntityStateProcessor> m_entityStateProcessor;
     std::unique_ptr<FlightProperties> m_flightProperties;
+
     std::unique_ptr<SGSocket> m_outgoingSocket;
+    DIS::DataStream m_outgoingBuffer;
     DIS::EntityStatePdu m_ownship;
     DIS::EntityID m_ownshipID;
     SikorskyS70AHelicopter m_ownshipType;
