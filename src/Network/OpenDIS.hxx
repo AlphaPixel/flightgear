@@ -56,10 +56,10 @@ private:
     std::unique_ptr<FlightProperties> m_flightProperties;
 
     std::unique_ptr<SGSocket> m_outgoingSocket;
+    SikorskyS70AHelicopter m_ownshipType;
     DIS::DataStream m_outgoingBuffer;
     DIS::EntityStatePdu m_ownship;
     DIS::EntityID m_ownshipID;
-    SikorskyS70AHelicopter m_ownshipType;
 };
 
 #endif // _FG_OPENDIS_HXX

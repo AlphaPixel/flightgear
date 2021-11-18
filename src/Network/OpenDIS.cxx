@@ -150,9 +150,9 @@ bool FGOpenDIS::close()
 
 void FGOpenDIS::init_ownship()
 {
-	m_ownshipID.setSite(0);
-    m_ownshipID.setApplication(1);
-    m_ownshipID.setEntity(1);
+	m_ownshipID.setSite(fgGetInt("/sim/dis/site", 1234));
+    m_ownshipID.setApplication(fgGetInt("/sim/dis/application", 5678));
+    m_ownshipID.setEntity(fgGetInt("/sim/dis/ownship_id", 8888));
 
 	m_ownship.setProtocolVersion(6);
 	m_ownship.setExerciseID(0);
