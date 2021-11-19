@@ -34,4 +34,18 @@ public:
         setSpecific(static_cast<unsigned char>(specific));
         setSubcategory(static_cast<unsigned char>(SubCategory_CIS_Tank::T72_MBT));
     }
+
+    static bool matches(const DIS::EntityType &check)
+    {
+        if (check.getCategory() == static_cast<unsigned char>(Category::TANK) &&
+            check.getCountry() == static_cast<unsigned char>(CountryCode::CIS) &&
+            check.getDomain() == static_cast<unsigned char>(Domain::LAND) &&
+            check.getEntityKind() == static_cast<unsigned char>(EntityKind::PLATFORM) &&
+            check.getSubcategory() == static_cast<unsigned char>(SubCategory_CIS_Tank::T72_MBT))
+        {
+            return true;
+        }
+
+        return false;
+    }
 };

@@ -15,6 +15,9 @@
 
 #include <iostream>
 
+const unsigned short site_id = 2222;
+const unsigned short application_id = 3333;
+
 namespace Example
 {
    enum T72_Articulation_Index
@@ -92,22 +95,22 @@ void init_entities(DIS::EntityStatePdu& friendly0,
    {
       // the enemies
       DIS::EntityID enemy_entity_id;
-      enemy_entity_id.setSite( 0 );
-      enemy_entity_id.setApplication( 1 );
+      enemy_entity_id.setSite( site_id );
+      enemy_entity_id.setApplication( application_id );
       enemy_entity_id.setEntity( 1 );
 
       enemy.setEntityID( enemy_entity_id );
 
       // the friendlies
       DIS::EntityID friendly_entity_id[2];
-      friendly_entity_id[0].setSite( 0 );
-      friendly_entity_id[0].setApplication( 1 );
+      friendly_entity_id[0].setSite( site_id );
+      friendly_entity_id[0].setApplication( application_id );
       friendly_entity_id[0].setEntity( 2 );
 
       friendly0.setEntityID( friendly_entity_id[0] );
 
-      friendly_entity_id[1].setSite( 0 );
-      friendly_entity_id[1].setApplication( 1 );
+      friendly_entity_id[1].setSite( site_id );
+      friendly_entity_id[1].setApplication( application_id );
       friendly_entity_id[1].setEntity( 3 );
 
       friendly1.setEntityID( friendly_entity_id[1] );
@@ -199,8 +202,8 @@ void init_effects(DIS::DetonationPdu &detonation, const DIS::EntityID& firing, c
    /// entity id data
    {
       DIS::EntityID detonation_entity_id;
-      detonation_entity_id.setSite( 0 );
-      detonation_entity_id.setApplication( 1 );
+      detonation_entity_id.setSite( site_id );
+      detonation_entity_id.setApplication( application_id );
       detonation_entity_id.setEntity( 4 );
 
       detonation.setMunitionID( detonation_entity_id );
@@ -216,8 +219,8 @@ void init_effects(DIS::DetonationPdu &detonation, const DIS::EntityID& firing, c
 
       // 0200 Point Detonation (PD)
       DIS::EventID detonation_event_id;
-      detonation_event_id.setSite( 0 );
-      detonation_event_id.setApplication( 1 );
+      detonation_event_id.setSite( site_id );
+      detonation_event_id.setApplication( application_id );
       detonation_event_id.setEventNumber( 0 );
       detonation.setEventID( detonation_event_id );
    }
@@ -293,7 +296,7 @@ void UpdateTank(DIS::EntityStatePdu& tank, Example::TankDynamics& dynamics, doub
 int main(int argc, char* argv[])
 {
    unsigned int port(3000);
-   std::string ip("224.0.0.1");
+   std::string ip("255.255.255.255");
    if( argc > 2 )
    {
       ip = argv[1];
