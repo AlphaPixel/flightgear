@@ -9,11 +9,14 @@
 class EntityStateProcessor : public DIS::IPacketProcessor
 {
 public:
-    EntityStateProcessor();
+    EntityStateProcessor(DIS::EntityStatePdu ownship);
     virtual ~EntityStateProcessor();
 
     typedef DIS::EntityStatePdu PduType;
 
     // DIS::IPacketProcessor
     void Process(const DIS::Pdu& packet) override;
+
+private:
+    DIS::EntityStatePdu m_ownship;
 };

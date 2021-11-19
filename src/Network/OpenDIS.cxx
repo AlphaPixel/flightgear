@@ -40,14 +40,11 @@
 
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
-	, m_entityStateProcessor(new EntityStateProcessor)
 	, m_flightProperties(new FlightProperties)
 	, m_ownshipType(Specific_SIKORSKY_S70A::UH60A_BLACKHAWK)
 	, m_outgoingBuffer(DIS::BIG)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
-
-	m_incomingMessage->AddProcessor(static_cast<unsigned char>(PDUType::ENTITY_STATE), m_entityStateProcessor.get());
 }
 
 FGOpenDIS::~FGOpenDIS()
@@ -86,10 +83,13 @@ bool FGOpenDIS::open()
 		}
 	}		
 
+	init_ownship();
+
+	m_entityStateProcessor.reset(new EntityStateProcessor(m_ownship));
+	m_incomingMessage->AddProcessor(static_cast<unsigned char>(PDUType::ENTITY_STATE), m_entityStateProcessor.get());
+
 	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));
 	m_outgoingSocket->open(SGProtocolDir::SG_IO_OUT);
-
-	init_ownship();
 
     return openedSuccessfully;
 }
@@ -201,6 +201,7 @@ bool FGOpenDIS::process_outgoing()
 
 	m_ownship.marshal(m_outgoingBuffer);
 	m_outgoingSocket->write(&m_outgoingBuffer[0], m_outgoingBuffer.size());
+	m_outgoingBuffer.clear();
 
 	return true;
 }
