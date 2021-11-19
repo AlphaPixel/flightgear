@@ -55,7 +55,15 @@ void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU
     // Is the PDU for a T72?
     if (T72Tank::matches(entityPDU.getEntityType()))
     {
-        // Add a T72 to the scene
+    }
+    else if (M1AbramsTank::matches(entityPDU.getEntityType()))
+    {
+    }
+    else if (AH64ApacheHelicopter::matches(entityPDU.getEntityType()))
+    {
+    }
+    else if (SikorskyS70AHelicopter::matches(entityPDU.getEntityType()))
+    {
     }
 }
 

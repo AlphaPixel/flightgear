@@ -48,7 +48,7 @@ enum class Category : std::uint8_t
 {
     TANK = 1,
     ATTACK_HELICOPTER = 20,
-    UTILITY_HELICOPTOR = 21,
+    UTILITY_HELICOPTER = 21,
 };
 
 //
