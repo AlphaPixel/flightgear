@@ -6,6 +6,7 @@
 #include <dis6/EntityStatePdu.h>                  // for typedef
 #include <utils/IPacketProcessor.h>                // for base class
 #include <map>
+#include <memory>
 
 class EntityStateProcessor : public DIS::IPacketProcessor
 {
@@ -29,11 +30,24 @@ private:
     {
         DIS::EntityStatePdu m_mostRecentPdu;
         std::string m_propertyName;             // Name of root in property tree
+
+        Entity(const DIS::EntityStatePdu &mostRecentPdu, const std::string propertyName)
+            : m_mostRecentPdu(mostRecentPdu)
+            , m_propertyName(propertyName)
+        {
+        }
     };
 
     void AddEntityToScene(const DIS::EntityStatePdu& entityPDU);
     void UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU);
     void RemoveExpiredEntities();
+    std::unique_ptr<Entity> CreateEntity(const DIS::EntityStatePdu& entityPDU);
+
+    // Specific entities to create
+    std::unique_ptr<Entity> CreateT72(const DIS::EntityStatePdu& entityPDU);
+    std::unique_ptr<Entity> CreateM1(const DIS::EntityStatePdu& entityPDU);
+    std::unique_ptr<Entity> CreateAH64(const DIS::EntityStatePdu& entityPDU);
+    std::unique_ptr<Entity> CreateUH60(const DIS::EntityStatePdu& entityPDU);
 
     std::map<unsigned short, Entity> m_entityMap;   // Keyed on entity ID.
 };
