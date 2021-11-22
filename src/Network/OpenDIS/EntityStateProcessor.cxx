@@ -5,6 +5,20 @@
 #include "EntityTypes.hxx"
 #include <FDM/JSBSim/math/FGLocation.h>
 #include <FDM/JSBSim/math/FGColumnVector3.h>
+#include <Main/fg_props.hxx>
+
+static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
+{
+    // Note: FGLocation expects ECEF to be specified in *FEET* but DIS 
+    // reports them in *METERS*.
+    const double meters_to_feet_scale_factor = 3.28084;
+
+    return JSBSim::FGLocation(
+        ecef.getX() * meters_to_feet_scale_factor,
+        ecef.getY() * meters_to_feet_scale_factor,
+        ecef.getZ() * meters_to_feet_scale_factor
+    );
+}
 
 EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
     : m_ownship(ownship)
@@ -82,15 +96,22 @@ void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU
 
 void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
 {
-    // // Set properties on entity model
-    // auto location = entityPDU.getEntityLocation();
+    // Set properties on entity model
+    JSBSim::FGLocation location = ECEFToLocation(entityPDU.getEntityLocation());
 
-    // FGColumnVector3 ecefCoordinates;
+    auto longitude = location.GetLongitude();
+    auto latitude = location.GetLatitude();
+    auto altitude = location.GetAltitudeASL();
 
-    // JSBSim::FGLocation location;
-	// location.SetPositionGeodetic(longitude, latitude, altitude_in_feet);
+    fgSetDouble(entity.m_propertyName + "/latitude", latitude);
+    fgSetDouble(entity.m_propertyName + "/longitude", longitude);
+    fgSetDouble(entity.m_propertyName + "/altitude", altitude);
+    
+    // auto orientation = entityPDU.getEntityOrientation();
 
-
+    // fgSetDouble(entity.m_propertyName + "/phi", orientation.getPhi());
+    // fgSetDouble(entity.m_propertyName + "/psi", orientation.getPsi());
+    // fgSetDouble(entity.m_propertyName + "/theta", orientation.getTheta());
 }
 
 void EntityStateProcessor::RemoveExpiredEntities()
@@ -118,7 +139,7 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateT72(co
     auto entity = CreateEntity(entityPDU);
     if (entity)
     {
-        // TODO: Jeremy - add a T72 at /models/<id> where <id> = entity->m_propertyName
+        // TODO: Jeremy - add a T72 at <id> where <id> = entity->m_propertyName
 
         // END TODO
 
@@ -134,7 +155,7 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateM1(con
     auto entity = CreateEntity(entityPDU);
     if (entity)
     {
-        // TODO: Jeremy - add a M1 at /models/<id> where <id> = entity->m_propertyName
+        // TODO: Jeremy - add a M1 at <id> where <id> = entity->m_propertyName
 
         // END TODO
 
@@ -150,7 +171,7 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateAH64(c
     auto entity = CreateEntity(entityPDU);
     if (entity)
     {
-        // TODO: Jeremy - add a AH64 at /models/<id> where <id> = entity->m_propertyName
+        // TODO: Jeremy - add a AH64 at <id> where <id> = entity->m_propertyName
 
         // END TODO
 
@@ -166,7 +187,7 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateUH60(c
     auto entity = CreateEntity(entityPDU);
     if (entity)
     {
-        // TODO: Jeremy - add a UH60 at /models/<id> where <id> = entity->m_propertyName
+        // TODO: Jeremy - add a UH60 at <id> where <id> = entity->m_propertyName
 
         // END TODO
 
