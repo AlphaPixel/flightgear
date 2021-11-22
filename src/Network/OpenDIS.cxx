@@ -150,8 +150,8 @@ bool FGOpenDIS::close()
 
 void FGOpenDIS::init_ownship()
 {
-	m_ownshipID.setSite(fgGetInt("/sim/dis/site", 1234));
-    m_ownshipID.setApplication(fgGetInt("/sim/dis/application", 5678));
+	m_ownshipID.setSite(fgGetInt("/sim/dis/site", 1767));
+    m_ownshipID.setApplication(fgGetInt("/sim/dis/application", 3534));
     m_ownshipID.setEntity(fgGetInt("/sim/dis/ownship_id", 8888));
 
 	m_ownship.setProtocolVersion(6);
@@ -162,6 +162,7 @@ void FGOpenDIS::init_ownship()
 
 bool FGOpenDIS::process_outgoing()
 {
+#if 0
 	const auto latitude = m_flightProperties->get_Latitude();
 	const auto longitude = m_flightProperties->get_Longitude();
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
@@ -202,6 +203,6 @@ bool FGOpenDIS::process_outgoing()
 	m_ownship.marshal(m_outgoingBuffer);
 	m_outgoingSocket->write(&m_outgoingBuffer[0], m_outgoingBuffer.size());
 	m_outgoingBuffer.clear();
-
+#endif
 	return true;
 }
