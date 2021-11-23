@@ -162,14 +162,14 @@ void FGOpenDIS::init_ownship()
 
 bool FGOpenDIS::process_outgoing()
 {
-#if 0
 	const auto latitude = m_flightProperties->get_Latitude();
 	const auto longitude = m_flightProperties->get_Longitude();
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
+	const auto altitude_in_meters = altitude_in_feet / 3.28084;
 
 	// Use JSBSim::FGLocation to determine the ECEF coordinates of the lat, lon, alt.
 	JSBSim::FGLocation location;
-	location.SetPositionGeodetic(longitude, latitude, altitude_in_feet);
+	location.SetPositionGeodetic(longitude, latitude, altitude_in_meters);
 
 	//
 	// Update ownship from flight dynamics
@@ -203,6 +203,6 @@ bool FGOpenDIS::process_outgoing()
 	m_ownship.marshal(m_outgoingBuffer);
 	m_outgoingSocket->write(&m_outgoingBuffer[0], m_outgoingBuffer.size());
 	m_outgoingBuffer.clear();
-#endif
+
 	return true;
 }
