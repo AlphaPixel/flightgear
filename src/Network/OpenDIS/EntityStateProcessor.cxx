@@ -20,9 +20,14 @@ static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
     );
 }
 
+static std::map<unsigned short, std::string> FIXME_mapping;
+
 EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
     : m_ownship(ownship)
 {
+	FIXME_mapping[0x0123] = "model";
+	FIXME_mapping[0x0456] = "model[1]";
+	FIXME_mapping[0x0789] = "model[2]";
 }
 
 EntityStateProcessor::~EntityStateProcessor()
@@ -103,9 +108,9 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
     auto latitude = location.GetLatitude();
     auto altitude = location.GetAltitudeASL();
 
-    fgSetDouble(entity.m_propertyName + "/latitude", latitude);
-    fgSetDouble(entity.m_propertyName + "/longitude", longitude);
-    fgSetDouble(entity.m_propertyName + "/altitude", altitude);
+    fgSetDouble(entity.m_propertyName + "/latitude-deg", latitude);
+    fgSetDouble(entity.m_propertyName + "/longitude-deg", longitude);
+    fgSetDouble(entity.m_propertyName + "/elevation-ft", altitude);
     
     // auto orientation = entityPDU.getEntityOrientation();
 
@@ -130,7 +135,8 @@ void EntityStateProcessor::Process(const DIS::Pdu& packet)
 
 std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateEntity(const DIS::EntityStatePdu& entityPDU)
 {
-    std::string propertyName = "/models/" + std::to_string(entityPDU.getEntityID().getEntity());
+    // std::string propertyName = "/models/" + std::to_string(entityPDU.getEntityID().getEntity());
+	std::string propertyName = "/models/" + FIXME_mapping[entityPDU.getEntityID().getEntity()];
     return std::unique_ptr<Entity>(new Entity(entityPDU, propertyName));
 }
 
