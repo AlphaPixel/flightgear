@@ -29,6 +29,8 @@
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
 #include <FDM/JSBSim/math/FGLocation.h>
+#include <FDM/JSBSim/input_output/FGGroundCallback.h>
+#include <simgear/math/sg_geodesy.hxx>
 
 #include "OpenDIS.hxx"
 #include "OpenDIS/EntityStateProcessor.hxx"
@@ -38,6 +40,45 @@
 
 #include "OpenDIS/EntityTypes.hxx"
 
+// A local ground callback class - taken from that inside of JSBSim. Only methods required
+// below are implemented;
+class GroundCallback : public JSBSim::FGGroundCallback 
+{
+public:
+    GroundCallback() {}
+    virtual ~GroundCallback() {}
+
+    /** Get the altitude above sea level dependent on the location. */
+    virtual double GetAltitude(const JSBSim::FGLocation& l) const 
+    {
+        return 0.0;
+    }
+
+    double GetAGLevel(double t, const JSBSim::FGLocation& l, JSBSim::FGLocation& cont, JSBSim::FGColumnVector3& n, JSBSim::FGColumnVector3& v, JSBSim::FGColumnVector3& w) const override 
+    {
+        return 0.0;
+    }
+
+    double GetTerrainGeoCentRadius(double t, const JSBSim::FGLocation& l) const override 
+    {
+        return 0.0;
+    }
+
+    double GetSeaLevelRadius(const JSBSim::FGLocation& l) const override 
+    {
+        double seaLevelRadius, latGeoc;
+
+        sgGeodToGeoc(l.GetGeodLatitudeRad(), l.GetGeodAltitude(),
+                        &seaLevelRadius, &latGeoc);
+
+        return seaLevelRadius * SG_METER_TO_FEET;
+    }
+
+    void SetTerrainGeoCentRadius(double radius) override {}
+};
+
+static JSBSim::FGGroundCallback_ptr __groundCallback(new GroundCallback);
+
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
 	, m_flightProperties(new FlightProperties)
@@ -45,6 +86,11 @@ FGOpenDIS::FGOpenDIS()
 	, m_outgoingBuffer(DIS::BIG)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
+
+	if (JSBSim::FGLocation::GetGroundCallback() == nullptr)
+    {
+        JSBSim::FGLocation::SetGroundCallback(__groundCallback);
+    }
 }
 
 FGOpenDIS::~FGOpenDIS()
@@ -109,26 +155,31 @@ bool FGOpenDIS::process()
 	}
     else if(get_direction() == SG_IO_IN) 
 	{
-		m_ioBuffer.resize(FG_MAX_MSG_SIZE);
-		int length = io->read(&m_ioBuffer[0], FG_MAX_MSG_SIZE);
-		if (length > 0)
+		int length;
+		do
 		{
-			m_ioBuffer.resize(length);
-			if(!parse_message()) 
+			m_ioBuffer.resize(FG_MAX_MSG_SIZE);
+			length = io->read(&m_ioBuffer[0], FG_MAX_MSG_SIZE);
+			if (length > 0)
 			{
-				SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
+				m_ioBuffer.resize(length);
+				if(!parse_message()) 
+				{
+					SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
+				}
+			} 
+			else if(errno == 0 || errno == ENOENT || errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS)
+			{
+				// Socket didn't have any data...
+				m_ioBuffer.resize(0);
 			}
-		} 
-		else if(errno == 0 || errno == ENOENT || errno == EAGAIN || errno == EWOULDBLOCK || errno == EINPROGRESS)
-		{
-			// Socket didn't have any data...
-			m_ioBuffer.resize(0);
+			else
+			{
+				SG_LOG(SG_IO, SG_ALERT, "Error reading data.");
+				return false;
+			}
 		}
-		else
-		{
-			SG_LOG(SG_IO, SG_ALERT, "Error reading data.");
-			return false;
-		}
+		while (length > 0);
     }
 
 	return process_outgoing();
@@ -162,27 +213,29 @@ void FGOpenDIS::init_ownship()
 
 bool FGOpenDIS::process_outgoing()
 {
-	const auto latitude = m_flightProperties->get_Latitude();
-	const auto longitude = m_flightProperties->get_Longitude();
+	const auto latitude_in_radians = m_flightProperties->get_Latitude();
+	const auto longitude_in_radians = m_flightProperties->get_Longitude();
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
-	const auto altitude_in_meters = altitude_in_feet / 3.28084;
 
 	// Use JSBSim::FGLocation to determine the ECEF coordinates of the lat, lon, alt.
 	JSBSim::FGLocation location;
-	location.SetPositionGeodetic(longitude, latitude, altitude_in_meters);
+	location.SetLongitude(longitude_in_radians);
+	location.SetLatitude(latitude_in_radians);
+	location.SetAltitudeASL(altitude_in_feet);
 
 	//
 	// Update ownship from flight dynamics
 	//
 
 	// Position
+    const double meters_to_feet_scale_factor = 3.28084;
+
 	DIS::Vector3Double position;
-	position.setX(location(1));	// NOTE: FGLocation indices start at 1.
-	position.setY(location(2));
-	position.setZ(location(3));
+	position.setX(location(1) / meters_to_feet_scale_factor);	// NOTE: FGLocation indices start at 1.
+	position.setY(location(2) / meters_to_feet_scale_factor);
+	position.setZ(location(3) / meters_to_feet_scale_factor);
 
 	m_ownship.setEntityLocation(position);
-
 
 	// Orientation
 	const auto phi = m_flightProperties->get_Phi();

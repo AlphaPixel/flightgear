@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<PropertyList>
+  <models>
+    <model n="0">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14122538</latitude-deg>
+      <longitude-deg type="double">-97.71313297</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="1">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14130327</latitude-deg>
+      <longitude-deg type="double">-97.71282675</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="2">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14138327</latitude-deg>
+      <longitude-deg type="double">-97.71251562</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="3">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14146432</latitude-deg>
+      <longitude-deg type="double">-97.71221309</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="4">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14154536</latitude-deg>
+      <longitude-deg type="double">-97.71190318</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="5">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14162115</latitude-deg>
+      <longitude-deg type="double">-97.71160065</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="6">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14046115</latitude-deg>
+      <longitude-deg type="double">-97.71286535</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="7">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14054286</latitude-deg>
+      <longitude-deg type="double">-97.71255952</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="8">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14061951</latitude-deg>
+      <longitude-deg type="double">-97.71225284</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="9">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14069688</latitude-deg>
+      <longitude-deg type="double">-97.71194532</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="10">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14077859</latitude-deg>
+      <longitude-deg type="double">-97.71163779</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="11">
+      <legend type="string"></legend>
+      <path type="string">Models/Aircraft/H-60.xml</path>
+      <latitude-deg type="double">31.14085451</latitude-deg>
+      <longitude-deg type="double">-97.71133027</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+  </models>
+</PropertyList>

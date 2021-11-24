@@ -5,48 +5,7 @@
 #include "EntityTypes.hxx"
 #include <FDM/JSBSim/math/FGLocation.h>
 #include <FDM/JSBSim/math/FGColumnVector3.h>
-#include <FDM/JSBSim/input_output/FGGroundCallback.h>
-#include <simgear/math/sg_geodesy.hxx>
 #include <Main/fg_props.hxx>
-
-// A local ground callback class - taken from that inside of JSBSim. Only methods required
-// below are implemented;
-class GroundCallback : public JSBSim::FGGroundCallback 
-{
-public:
-    GroundCallback() {}
-    virtual ~GroundCallback() {}
-
-    /** Get the altitude above sea level dependent on the location. */
-    virtual double GetAltitude(const JSBSim::FGLocation& l) const 
-    {
-        return 0.0;
-    }
-
-    double GetAGLevel(double t, const JSBSim::FGLocation& l, JSBSim::FGLocation& cont, JSBSim::FGColumnVector3& n, JSBSim::FGColumnVector3& v, JSBSim::FGColumnVector3& w) const override 
-    {
-        return 0.0;
-    }
-
-    double GetTerrainGeoCentRadius(double t, const JSBSim::FGLocation& l) const override 
-    {
-        return 0.0;
-    }
-
-    double GetSeaLevelRadius(const JSBSim::FGLocation& l) const override 
-    {
-        double seaLevelRadius, latGeoc;
-
-        sgGeodToGeoc(l.GetGeodLatitudeRad(), l.GetGeodAltitude(),
-                        &seaLevelRadius, &latGeoc);
-
-        return seaLevelRadius * SG_METER_TO_FEET;
-    }
-
-    void SetTerrainGeoCentRadius(double radius) override {}
-};
-
-static JSBSim::FGGroundCallback_ptr __groundCallback(new GroundCallback);
 
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_T72 = 14;
@@ -59,9 +18,11 @@ static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
     const double meters_to_feet_scale_factor = 3.28084;
 
     return JSBSim::FGLocation(
-        ecef.getX() * meters_to_feet_scale_factor,
-        ecef.getY() * meters_to_feet_scale_factor,
-        ecef.getZ() * meters_to_feet_scale_factor
+        JSBSim::FGColumnVector3(
+            ecef.getX() * meters_to_feet_scale_factor,
+            ecef.getY() * meters_to_feet_scale_factor,
+            ecef.getZ() * meters_to_feet_scale_factor
+        )
     );
 }
 
@@ -166,13 +127,9 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
     // Set properties on entity model
     JSBSim::FGLocation location = ECEFToLocation(entityPDU.getEntityLocation());
 
-    auto longitude = location.GetLongitude();
-    auto latitude = location.GetLatitude();
+    auto longitude = location.GetLongitudeDeg();
+    auto latitude = location.GetLatitudeDeg();
 
-    if (JSBSim::FGLocation::GetGroundCallback() == nullptr)
-    {
-        JSBSim::FGLocation::SetGroundCallback(__groundCallback);
-    }
     auto altitude = location.GetAltitudeASL();
 
     fgSetDouble(entity.m_propertyName + "/latitude-deg", latitude);

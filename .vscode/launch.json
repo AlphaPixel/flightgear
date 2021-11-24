@@ -14,7 +14,11 @@
                 "--lat=31.13912981822674",
                 "--lon=-97.71213774258472",
                 "--heading=270",
-                "--aircraft=uh60"
+                "--aircraft=ufo",
+                "--timeofday=morning",
+                // "--prop:/sim/frame_rate_throttle-hz=30",
+                // "--prop://sim/max-sim-time-per-frame=0.0075",
+                "--config=${workspaceFolder}/models.xml"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/src/Main",
