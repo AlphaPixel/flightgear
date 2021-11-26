@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+build/src/Main/fgfs \
+	--dis=socket,in,10,255.255.255.255,3000,broadcast \
+	--site=22317 \
+	--application=44635 \
+	--ownship_id=1111 \
+	--lat=31.13912981822674 \
+	--lon=-97.71213774258472 \
+	--heading=270 \
+	--timeofday=morning \
+	--aircraft=uh60 \
+	${*}
