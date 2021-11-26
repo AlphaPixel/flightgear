@@ -86,6 +86,10 @@ public:
      */
     virtual void remove_instance (Instance * instance);
 
+    std::vector<Instance*>& getInstances() {
+		return _instances;
+	}
+
 private:
     /**
      * Listener class that adds models at runtime.
