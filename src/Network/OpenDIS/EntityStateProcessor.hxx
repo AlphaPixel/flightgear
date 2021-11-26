@@ -29,11 +29,11 @@ private:
     struct Entity
     {
         DIS::EntityStatePdu m_mostRecentPdu;
-        std::string m_propertyName;             // Name of root in property tree
+        size_t m_modelIndex;
 
-        Entity(const DIS::EntityStatePdu &mostRecentPdu, const std::string propertyName)
+        Entity(const DIS::EntityStatePdu &mostRecentPdu, size_t modelIndex)
             : m_mostRecentPdu(mostRecentPdu)
-            , m_propertyName(propertyName)
+            , m_modelIndex(modelIndex)
         {
         }
     };
@@ -41,7 +41,7 @@ private:
     void AddEntityToScene(const DIS::EntityStatePdu& entityPDU);
     void UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU);
     void RemoveExpiredEntities();
-    std::unique_ptr<Entity> CreateEntity(const DIS::EntityStatePdu& entityPDU, const std::string &propertyTreePath);
+    std::unique_ptr<Entity> CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex);
 
     // Specific entities to create
     std::unique_ptr<Entity> CreateAH64(const DIS::EntityStatePdu& entityPDU);
@@ -50,10 +50,10 @@ private:
     std::unique_ptr<Entity> CreateUH60(const DIS::EntityStatePdu& entityPDU);
 
     // Model allocation arrays
-    std::vector<std::string> m_availableModels_AH64;
-    std::vector<std::string> m_availableModels_M1;
-    std::vector<std::string> m_availableModels_T72;
-    std::vector<std::string> m_availableModels_UH60;
+    std::vector<size_t> m_availableModels_AH64;
+    std::vector<size_t> m_availableModels_M1;
+    std::vector<size_t> m_availableModels_T72;
+    std::vector<size_t> m_availableModels_UH60;
 
     std::map<unsigned short, Entity> m_entityMap;   // Keyed on entity ID.
 };

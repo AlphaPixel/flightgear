@@ -6,57 +6,8 @@
 #include <FDM/JSBSim/math/FGLocation.h>
 #include <FDM/JSBSim/math/FGColumnVector3.h>
 #include <Main/fg_props.hxx>
-
-#if 0
-namespace FIXME {
-
-class LocationUpdater {
-public:
-	// TODO: The idea of this function was to take all the POSSIBLE incoming EntityID values
-	// from OpenDIS and do an efficient, one-time mapping of those values to the actual
-	// model instances inside FlightGear's model manager.
-	//
-	// This may not even be POSSIBLE, I'll let you decide...
-	bool init() {
-		/* auto mmss = globals->get_subsystem("model-manager");
-		auto mm = dynamic_cast<FGModelMgr*>(mmss);
-
-		if(mm) {
-			// An std::vector of FGModelMgr::Instance*, one for each model.
-			auto instances = mm->getInstances();
-
-			for(size_t i = 0; i < instances.size(); i++) {
-				_entities[???] = instances[i];
-			}
-
-			return true;
-		} */
-
-		return false;
-	}
-
-	// DIS::EntityID::getEntity returns an "unsigned short". It does publish this type,
-	// so we don't have a "clean" way of deriving it at compile-time.
-	typedef unsigned short entity_t;
-
-	void update(entity_t e, const JSBSim::FGLocation& l) {
-		auto m = _entities[e]->model;
-		auto p = m->getPosition();
-
-		// p.setLatitudeDeg(l.GetLatitudeDeg());
-		// p.setLongitudeDeg(l.GetLongitudeDeg());
-		// p.setElevationFt(l.GetAltitudeASL());
-
-		m->setPosition(p);
-		m->update();
-	}
-
-private:
-	std::map<entity_t, FGModelMgr::Instance*> _entities;
-};
-
-}
-#endif
+#include <Model/modelmgr.hxx>
+#include <simgear/scene/model/placement.hxx>
 
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_T72 = 14;
@@ -82,26 +33,21 @@ EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
 {
     // Set up model availibility arrays
     size_t globalModelIndex = 0;
-    m_availableModels_UH60.push_back("/models/model");
-    for (size_t modelIndex = 1; modelIndex < modelCount_UH60; ++modelIndex) 
-    // NOTE: starting index of 1 is by design since the previous statement added the first item.
+    for (size_t modelIndex = 0; modelIndex < modelCount_UH60; ++modelIndex) 
     {
-        std::string propertyName = "/models/model[" + std::to_string(modelIndex + globalModelIndex) + "]";
-        m_availableModels_UH60.push_back(propertyName);
+        m_availableModels_UH60.push_back(globalModelIndex + modelIndex);
     }
     globalModelIndex += modelCount_UH60;
 
     for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
     {
-        std::string propertyName = "/models/model[" + std::to_string(modelIndex + globalModelIndex) + "]";
-        m_availableModels_T72.push_back(propertyName);
+        m_availableModels_T72.push_back(globalModelIndex + modelIndex);
     }
     globalModelIndex += modelCount_T72;
 
     for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
     {
-        std::string propertyName = "/models/model[" + std::to_string(modelIndex + globalModelIndex) + "]";
-        m_availableModels_M1.push_back(propertyName);
+        m_availableModels_M1.push_back(globalModelIndex + modelIndex);
     }
 }
 
@@ -175,23 +121,32 @@ void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU
 
 void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
 {
-    // Set properties on entity model
-    JSBSim::FGLocation location = ECEFToLocation(entityPDU.getEntityLocation());
+    auto mmss = globals->get_subsystem("model-manager");
+    auto mm = dynamic_cast<FGModelMgr*>(mmss);
 
-    auto longitude = location.GetLongitudeDeg();
-    auto latitude = location.GetLatitudeDeg();
+    auto modelInstances = mm->getInstances();
+    if (entity.m_modelIndex < modelInstances.size())
+    {
+        // Set properties on entity model
+        auto modelInstance = modelInstances[entity.m_modelIndex];
 
-    auto altitude = location.GetAltitudeASL();
+        JSBSim::FGLocation location = ECEFToLocation(entityPDU.getEntityLocation());
 
-    fgSetDouble(entity.m_propertyName + "/latitude-deg", latitude);
-    fgSetDouble(entity.m_propertyName + "/longitude-deg", longitude);
-    fgSetDouble(entity.m_propertyName + "/elevation-ft", altitude);
-    
-    // auto orientation = entityPDU.getEntityOrientation();
+        auto longitude = location.GetLongitudeDeg();
+        auto latitude = location.GetLatitudeDeg();
 
-    // fgSetDouble(entity.m_propertyName + "/phi", orientation.getPhi());
-    // fgSetDouble(entity.m_propertyName + "/psi", orientation.getPsi());
-    // fgSetDouble(entity.m_propertyName + "/theta", orientation.getTheta());
+        auto altitude = location.GetAltitudeASL();
+
+        auto model = modelInstance->model;
+        model->setPosition(SGGeod::fromDegFt(longitude, latitude, altitude));
+        model->update();
+
+        // auto orientation = entityPDU.getEntityOrientation();
+
+        // fgSetDouble(entity.m_propertyName + "/phi", orientation.getPhi());
+        // fgSetDouble(entity.m_propertyName + "/psi", orientation.getPsi());
+        // fgSetDouble(entity.m_propertyName + "/theta", orientation.getTheta());
+    }
 }
 
 void EntityStateProcessor::RemoveExpiredEntities()
@@ -208,9 +163,9 @@ void EntityStateProcessor::Process(const DIS::Pdu& packet)
     }
 }
 
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateEntity(const DIS::EntityStatePdu& entityPDU, const std::string &propertyTreePath)
+std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex)
 {
-    return std::unique_ptr<Entity>(new Entity(entityPDU, propertyTreePath));
+    return std::unique_ptr<Entity>(new Entity(entityPDU, modelIndex));
 }
 
 std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateT72(const DIS::EntityStatePdu& entityPDU)
