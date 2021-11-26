@@ -7,6 +7,57 @@
 #include <FDM/JSBSim/math/FGColumnVector3.h>
 #include <Main/fg_props.hxx>
 
+#if 0
+namespace FIXME {
+
+class LocationUpdater {
+public:
+	// TODO: The idea of this function was to take all the POSSIBLE incoming EntityID values
+	// from OpenDIS and do an efficient, one-time mapping of those values to the actual
+	// model instances inside FlightGear's model manager.
+	//
+	// This may not even be POSSIBLE, I'll let you decide...
+	bool init() {
+		/* auto mmss = globals->get_subsystem("model-manager");
+		auto mm = dynamic_cast<FGModelMgr*>(mmss);
+
+		if(mm) {
+			// An std::vector of FGModelMgr::Instance*, one for each model.
+			auto instances = mm->getInstances();
+
+			for(size_t i = 0; i < instances.size(); i++) {
+				_entities[???] = instances[i];
+			}
+
+			return true;
+		} */
+
+		return false;
+	}
+
+	// DIS::EntityID::getEntity returns an "unsigned short". It does publish this type,
+	// so we don't have a "clean" way of deriving it at compile-time.
+	typedef unsigned short entity_t;
+
+	void update(entity_t e, const JSBSim::FGLocation& l) {
+		auto m = _entities[e]->model;
+		auto p = m->getPosition();
+
+		// p.setLatitudeDeg(l.GetLatitudeDeg());
+		// p.setLongitudeDeg(l.GetLongitudeDeg());
+		// p.setElevationFt(l.GetAltitudeASL());
+
+		m->setPosition(p);
+		m->update();
+	}
+
+private:
+	std::map<entity_t, FGModelMgr::Instance*> _entities;
+};
+
+}
+#endif
+
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_T72 = 14;
 static const size_t modelCount_M1 = 14;
