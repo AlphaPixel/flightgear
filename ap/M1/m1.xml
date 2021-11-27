@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <PropertyList>
-
 	<path>m1.ac</path>
 
 	<description>Tank M1 Abrams. This tank is designed to be a static or moving (set as a ship or aircraft with heading, speed, rudder settings) air-to-ground target. You can damage it with heavy gun or bombs.
@@ -96,5 +95,4 @@
 		<min-m>0</min-m>
 		<max-m>10000</max-m>
 	</animation -->
-
 </PropertyList>

@@ -1,0 +1,18 @@
+The XML generator script will use paths RELATIVE to whatever your FG_ROOT
+directory is. There are actually multiple places this could be, and it will
+depend on how you installed FlightGear. The following link has more
+information:
+
+	https://wiki.flightgear.org/$FG_ROOT
+
+After you've found that directory, you will need to do a recursive copy of the
+parent model directories:
+
+	# cp -R M1 $FG_ROOT/Models/Military
+	# cp -R T72 $FG_ROOT/Models/Military
+
+It is also possible on Linux to use the ".fgfs" directory FlightGear uses to
+download models dynamically.
+
+	# cp -R M1 /home/user/.fgfs/Models/Military
+	# cp -R T72 /home/user/.fgfs/Models/Military
