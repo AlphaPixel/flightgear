@@ -10,4 +10,8 @@ build/src/Main/fgfs \
 	--heading=270 \
 	--timeofday=morning \
 	--aircraft=uh60 \
+	--multiplay=out,10,127.0.0.1,5000 \
+	--multiplay=in,10,127.0.0.1,5001 \
+	--callsign=Test1 \
+	--data=./ap \
 	${*}
