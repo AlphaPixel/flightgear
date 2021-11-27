@@ -12,5 +12,6 @@ build/src/Main/fgfs \
 	--aircraft=uh60 \
 	--multiplay=out,10,127.0.0.1,5001 \
 	--multiplay=in,10,127.0.0.1,5000 \
-	--callsign=Test2
+	--callsign=Test2 \
+	--data=./ap \
 	${*}

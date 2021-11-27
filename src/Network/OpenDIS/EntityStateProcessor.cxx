@@ -107,10 +107,10 @@ void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU
     {
         entity = CreateAH64(entityPDU);
     }
-    // else if (SikorskyS70AHelicopter::matches(entityPDU.getEntityType()))
-    // {
-    //     entity = CreateUH60(entityPDU);
-    // }
+    else if (SikorskyS70AHelicopter::matches(entityPDU.getEntityType()))
+    {
+        entity = CreateUH60(entityPDU);
+    }
 
     // If an entity was created above, add it to the map
     if (entity)

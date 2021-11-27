@@ -16,9 +16,11 @@
                 "--heading=270",
                 "--aircraft=uh60",
                 "--timeofday=morning",
-                // "--prop:/sim/frame_rate_throttle-hz=30",
-                // "--prop://sim/max-sim-time-per-frame=0.0075",
-                "--config=${workspaceFolder}/models.xml"
+                "--config=${workspaceFolder}/models.xml",
+                "--multiplay=out,10,127.0.0.1,5000",
+                "--multiplay=in,10,127.0.0.1,5001",
+                "--callsign=Debugger",
+                "--data=./ap"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build/src/Main",
