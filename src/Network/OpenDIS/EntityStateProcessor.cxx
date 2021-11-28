@@ -10,8 +10,8 @@
 #include <simgear/scene/model/placement.hxx>
 
 static const size_t modelCount_UH60 = 6;
-static const size_t modelCount_T72 = 14;
 static const size_t modelCount_M1 = 14;
+static const size_t modelCount_T72 = 14;
 
 static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
 {
@@ -39,15 +39,15 @@ EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
     }
     globalModelIndex += modelCount_UH60;
 
-    for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
-    {
-        m_availableModels_T72.push_back(globalModelIndex + modelIndex);
-    }
-    globalModelIndex += modelCount_T72;
-
     for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
     {
         m_availableModels_M1.push_back(globalModelIndex + modelIndex);
+    }
+    globalModelIndex += modelCount_M1;
+
+    for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
+    {
+        m_availableModels_T72.push_back(globalModelIndex + modelIndex);
     }
 }
 
