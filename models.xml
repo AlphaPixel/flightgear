@@ -45,51 +45,177 @@
     </model>
     <model n="6">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14046115</latitude-deg>
       <longitude-deg type="double">-97.71286535</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="7">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14054286</latitude-deg>
       <longitude-deg type="double">-97.71255952</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="8">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14061951</latitude-deg>
       <longitude-deg type="double">-97.71225284</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="9">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14069688</latitude-deg>
       <longitude-deg type="double">-97.71194532</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="10">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14077859</latitude-deg>
       <longitude-deg type="double">-97.71163779</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="11">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.14085451</latitude-deg>
       <longitude-deg type="double">-97.71133027</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
     <model n="12">
       <legend type="string"></legend>
-      <path type="string">Models/Aircraft/H-60.xml</path>
+      <path type="string">Models/Military/M1/m1.xml</path>
       <latitude-deg type="double">31.13985639</latitude-deg>
       <longitude-deg type="double">-97.71265771</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="13">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.13991992</latitude-deg>
+      <longitude-deg type="double">-97.71241122</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="14">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.13998202</latitude-deg>
+      <longitude-deg type="double">-97.71216593</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="15">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.14004573</latitude-deg>
+      <longitude-deg type="double">-97.71192118</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="16">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.14010886</latitude-deg>
+      <longitude-deg type="double">-97.71167643</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="17">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.14017085</latitude-deg>
+      <longitude-deg type="double">-97.71143033</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="18">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.1390532</latitude-deg>
+      <longitude-deg type="double">-97.71237564</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="19">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/M1/m1.xml</path>
+      <latitude-deg type="double">31.13912079</latitude-deg>
+      <longitude-deg type="double">-97.7121332</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="20">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13917925</latitude-deg>
+      <longitude-deg type="double">-97.71188824</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="21">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13924376</latitude-deg>
+      <longitude-deg type="double">-97.71164093</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="22">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13930726</latitude-deg>
+      <longitude-deg type="double">-97.71140187</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="23">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13937177</latitude-deg>
+      <longitude-deg type="double">-97.71115692</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="24">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13826038</latitude-deg>
+      <longitude-deg type="double">-97.71210409</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="25">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13833092</latitude-deg>
+      <longitude-deg type="double">-97.7118597</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="26">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13839173</latitude-deg>
+      <longitude-deg type="double">-97.71161247</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="27">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13845132</latitude-deg>
+      <longitude-deg type="double">-97.71136951</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="28">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13852307</latitude-deg>
+      <longitude-deg type="double">-97.71112512</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="29">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13858631</latitude-deg>
+      <longitude-deg type="double">-97.71088642</longitude-deg>
+      <elevation-ft type="double">900</elevation-ft>
+    </model>
+    <model n="30">
+      <legend type="string"></legend>
+      <path type="string">Models/Military/T72/t72.xml</path>
+      <latitude-deg type="double">31.13865684</latitude-deg>
+      <longitude-deg type="double">-97.71064487</longitude-deg>
       <elevation-ft type="double">900</elevation-ft>
     </model>
   </models>

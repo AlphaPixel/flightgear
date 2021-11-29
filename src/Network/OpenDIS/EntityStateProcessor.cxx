@@ -11,13 +11,14 @@
 
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
-static const size_t modelCount_T72 = 14;
+static const size_t modelCount_T72 = 11;
+
+static const double meters_to_feet_scale_factor = 3.28084;
 
 static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
 {
     // Note: FGLocation expects ECEF to be specified in *FEET* but DIS 
     // reports them in *METERS*.
-    const double meters_to_feet_scale_factor = 3.28084;
 
     return JSBSim::FGLocation(
         JSBSim::FGColumnVector3(
@@ -137,8 +138,19 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         auto altitude = location.GetAltitudeASL();
 
         auto model = modelInstance->model;
+
+        // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
+        // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
+        // and will overwrite what's written in the model.
         model->setPosition(SGGeod::fromDegFt(longitude, latitude, altitude));
+//        SG_LOG(SG_IO, SG_ALERT, "ENTITY POSITION: " << std::to_string(latitude) << " " << std::to_string(longitude) << " " << std::to_string(altitude));
+//        SG_LOG(SG_IO, SG_ALERT, "ENTITY POSITION: " << std::to_string(location.GetLatitude()) << " " << std::to_string(location.GetLongitude()) << " " << std::to_string(altitude / meters_to_feet_scale_factor));
         model->update();
+
+        const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
+        fgSetDouble(propertyPath + "/latitude-deg", latitude);
+        fgSetDouble(propertyPath + "/longitude-deg", longitude);
+        fgSetDouble(propertyPath + "/elevation-ft", altitude);
 
         // auto orientation = entityPDU.getEntityOrientation();
 

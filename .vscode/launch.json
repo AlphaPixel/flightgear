@@ -14,7 +14,7 @@
                 "--lat=31.13912981822674",
                 "--lon=-97.71213774258472",
                 "--heading=270",
-                "--aircraft=ufo",
+                "--aircraft=uh60",
                 "--timeofday=morning",
                 "--config=${workspaceFolder}/models.xml",
                 "--multiplay=out,10,127.0.0.1,5000",
