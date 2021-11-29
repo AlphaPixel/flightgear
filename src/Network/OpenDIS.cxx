@@ -28,8 +28,6 @@
 #include <simgear/io/sg_socket.hxx>
 #include <Main/fg_props.hxx>
 #include <Main/globals.hxx>
-#include <FDM/JSBSim/math/FGLocation.h>
-#include <FDM/JSBSim/input_output/FGGroundCallback.h>
 #include <simgear/math/sg_geodesy.hxx>
 
 #include "OpenDIS.hxx"
@@ -40,45 +38,6 @@
 
 #include "OpenDIS/EntityTypes.hxx"
 
-// A local ground callback class - taken from that inside of JSBSim. Only methods required
-// below are implemented;
-class GroundCallback : public JSBSim::FGGroundCallback 
-{
-public:
-    GroundCallback() {}
-    virtual ~GroundCallback() {}
-
-    /** Get the altitude above sea level dependent on the location. */
-    virtual double GetAltitude(const JSBSim::FGLocation& l) const 
-    {
-        return 0.0;
-    }
-
-    double GetAGLevel(double t, const JSBSim::FGLocation& l, JSBSim::FGLocation& cont, JSBSim::FGColumnVector3& n, JSBSim::FGColumnVector3& v, JSBSim::FGColumnVector3& w) const override 
-    {
-        return 0.0;
-    }
-
-    double GetTerrainGeoCentRadius(double t, const JSBSim::FGLocation& l) const override 
-    {
-        return 0.0;
-    }
-
-    double GetSeaLevelRadius(const JSBSim::FGLocation& l) const override 
-    {
-        double seaLevelRadius, latGeoc;
-
-        sgGeodToGeoc(l.GetGeodLatitudeRad(), l.GetGeodAltitude(),
-                        &seaLevelRadius, &latGeoc);
-
-        return seaLevelRadius * SG_METER_TO_FEET;
-    }
-
-    void SetTerrainGeoCentRadius(double radius) override {}
-};
-
-static JSBSim::FGGroundCallback_ptr __groundCallback(new GroundCallback);
-
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
 	, m_flightProperties(new FlightProperties)
@@ -86,11 +45,6 @@ FGOpenDIS::FGOpenDIS()
 	, m_outgoingBuffer(DIS::BIG)
 {
 	m_ioBuffer.reserve(FG_MAX_MSG_SIZE);
-
-	if (JSBSim::FGLocation::GetGroundCallback() == nullptr)
-    {
-        JSBSim::FGLocation::SetGroundCallback(__groundCallback);
-    }
 }
 
 FGOpenDIS::~FGOpenDIS()
@@ -217,23 +171,22 @@ bool FGOpenDIS::process_outgoing()
 	const auto longitude_in_radians = m_flightProperties->get_Longitude();
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
 
-	// Use JSBSim::FGLocation to determine the ECEF coordinates of the lat, lon, alt.
-	JSBSim::FGLocation location;
-	location.SetLongitude(longitude_in_radians);
-	location.SetLatitude(latitude_in_radians);
-	location.SetAltitudeASL(altitude_in_feet);
+	// Determine ECEF coordinates from Lat/Lon/Alt
+    const double meters_to_feet_scale_factor = 3.28084;
+
+	double ecef[3];
+	sgGeodToCart(latitude_in_radians, longitude_in_radians, altitude_in_feet / meters_to_feet_scale_factor, ecef);
 
 	//
 	// Update ownship from flight dynamics
 	//
 
 	// Position
-    const double meters_to_feet_scale_factor = 3.28084;
 
 	DIS::Vector3Double position;
-	position.setX(location(1) / meters_to_feet_scale_factor);	// NOTE: FGLocation indices start at 1.
-	position.setY(location(2) / meters_to_feet_scale_factor);
-	position.setZ(location(3) / meters_to_feet_scale_factor);
+	position.setX(ecef[0]);
+	position.setY(ecef[1]);
+	position.setZ(ecef[2]);
 
 	m_ownship.setEntityLocation(position);
 

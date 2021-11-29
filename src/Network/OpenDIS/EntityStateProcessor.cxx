@@ -3,11 +3,13 @@
 // Copyright (C) 2021 - AlphaPixel (http://www.alphapixel.com)
 #include "EntityStateProcessor.hxx"
 #include "EntityTypes.hxx"
-#include <FDM/JSBSim/math/FGLocation.h>
-#include <FDM/JSBSim/math/FGColumnVector3.h>
 #include <Main/fg_props.hxx>
 #include <Model/modelmgr.hxx>
+#include <FDM/flight.hxx>
+#include <FDM/fdm_shell.hxx>
 #include <simgear/scene/model/placement.hxx>
+#include <osg/Math>  // RadiansToDegrees()
+#include <simgear/math/sg_geodesy.hxx>
 
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
@@ -15,18 +17,23 @@ static const size_t modelCount_T72 = 11;
 
 static const double meters_to_feet_scale_factor = 3.28084;
 
-static JSBSim::FGLocation ECEFToLocation(const DIS::Vector3Double &ecef)
+static void ECEFtoLLA(const DIS::Vector3Double &ecef, double &latitude, double &longitude, double &altitude_in_meters)
 {
-    // Note: FGLocation expects ECEF to be specified in *FEET* but DIS 
-    // reports them in *METERS*.
+    const double xyz[3] = {ecef.getX(), ecef.getY(), ecef.getZ() };
+    sgCartToGeod(xyz, &latitude, &longitude, &altitude_in_meters);
+}
 
-    return JSBSim::FGLocation(
-        JSBSim::FGColumnVector3(
-            ecef.getX() * meters_to_feet_scale_factor,
-            ecef.getY() * meters_to_feet_scale_factor,
-            ecef.getZ() * meters_to_feet_scale_factor
-        )
-    );
+static double GetGroundLevelInFeet(const SGGeod& position)
+{
+    double groundLevel = 0.0;
+    FDMShell* fdm = static_cast<FDMShell*>(globals->get_subsystem("flight"));
+    FGInterface* fdmState = fdm->getInterface();
+    if (fdmState) 
+    {
+        groundLevel = fdmState->get_groundlevel_m(position) * meters_to_feet_scale_factor;
+    }
+
+    return groundLevel;
 }
 
 EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
@@ -131,32 +138,70 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         // Set properties on entity model
         auto modelInstance = modelInstances[entity.m_modelIndex];
 
-        JSBSim::FGLocation location = ECEFToLocation(entityPDU.getEntityLocation());
+        // Get the lat/lon/altitude from the PDU
+        double latitudeInRadians, longitudeInRadians, altitudeInMeters;
+        ECEFtoLLA(entityPDU.getEntityLocation(), latitudeInRadians, longitudeInRadians, altitudeInMeters);
 
-        auto longitude = location.GetLongitudeDeg();
-        auto latitude = location.GetLatitudeDeg();
-        auto altitude = location.GetAltitudeASL();
+        // Change from radians to degrees and from meters to feet.
+        auto latitudeInDegrees = osg::RadiansToDegrees(latitudeInRadians);
+        auto longitudeInDegrees = osg::RadiansToDegrees(longitudeInRadians);
+        auto altitudeInFeet = altitudeInMeters * meters_to_feet_scale_factor;
 
-        auto model = modelInstance->model;
+        // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
+        auto position = SGGeod::fromDegFt(longitudeInDegrees, latitudeInDegrees, altitudeInFeet);
+        auto groundLevelInFeet = GetGroundLevelInFeet(position);
+        if (altitudeInFeet < groundLevelInFeet)
+        {
+            altitudeInFeet = groundLevelInFeet;
+            position.setElevationFt(groundLevelInFeet);
+        }
+
+        // Get the orientation of the model from the PDU
+        auto orientation = entityPDU.getEntityOrientation();
+        auto psi = orientation.getPsi();
+        auto theta = orientation.getTheta();
+        auto phi = orientation.getPhi();
 
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
         // and will overwrite what's written in the model.
-        model->setPosition(SGGeod::fromDegFt(longitude, latitude, altitude));
-//        SG_LOG(SG_IO, SG_ALERT, "ENTITY POSITION: " << std::to_string(latitude) << " " << std::to_string(longitude) << " " << std::to_string(altitude));
-//        SG_LOG(SG_IO, SG_ALERT, "ENTITY POSITION: " << std::to_string(location.GetLatitude()) << " " << std::to_string(location.GetLongitude()) << " " << std::to_string(altitude / meters_to_feet_scale_factor));
+        auto model = modelInstance->model;
+        model->setPosition(position);
+
+        // NOTES:
+        // Euler angle rotation sequence (per DIS spec)
+        // Z Axis Rotation (first) - Psi
+        // Y Axis Rotation (second) - Theta
+        // X Axis Rotation (third) - Phi
+        //
+        // DIS axis orientation, 
+        // X - points forward
+        // Y - points to the right
+        // Z - points down
+
+        // NOTE: DIS and FG don't always agree on orientations.  These are the various corrections.
+        auto headingCorrection = 3.14159;   // Spin the model 180 degrees in heading.
+        // auto pitchCorrection = 0.0;
+        // auto rollCorrection = 0.0;
+
+        auto heading = phi + headingCorrection;
+        //auto pitch = psi;
+        //auto roll = psi;
+
+        auto q = SGQuatd::fromEulerRad(psi, theta, phi);
+        model->setOrientation(q);
         model->update();
 
+        // Set the values in the property system.
         const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
-        fgSetDouble(propertyPath + "/latitude-deg", latitude);
-        fgSetDouble(propertyPath + "/longitude-deg", longitude);
-        fgSetDouble(propertyPath + "/elevation-ft", altitude);
 
-        // auto orientation = entityPDU.getEntityOrientation();
+        fgSetDouble(propertyPath + "/latitude-deg", latitudeInDegrees);
+        fgSetDouble(propertyPath + "/longitude-deg", longitudeInDegrees);
+        fgSetDouble(propertyPath + "/elevation-ft", altitudeInFeet);
 
-        // fgSetDouble(entity.m_propertyName + "/phi", orientation.getPhi());
-        // fgSetDouble(entity.m_propertyName + "/psi", orientation.getPsi());
-        // fgSetDouble(entity.m_propertyName + "/theta", orientation.getTheta());
+        fgSetDouble(propertyPath + "/heading-deg", osg::RadiansToDegrees(heading));
+//        fgSetDouble(propertyPath + "/pitch-deg", osg::RadiansToDegrees(pitch));
+//        fgSetDouble(propertyPath + "/roll-deg", osg::RadiansToDegrees(roll));
     }
 }
 
