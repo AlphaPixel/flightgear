@@ -27,7 +27,7 @@
 #include <utils/IncomingMessage.h>                 // for library usage
 #include "OpenDIS/EntityTypes.hxx"
 
-class EntityStateProcessor;
+class EntityManager;
 class FlightProperties;
 class SGSocket;
 
@@ -39,11 +39,9 @@ public:
 
     bool gen_message();
     bool parse_message();
- 
+
     bool open() override;
-
     bool process() override;
-
     bool close() override;
 
 private:
@@ -52,7 +50,7 @@ private:
 
     std::vector<char> m_ioBuffer;
     std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;
-    std::unique_ptr<EntityStateProcessor> m_entityStateProcessor;
+    std::unique_ptr<EntityManager> m_entityManager;
     std::unique_ptr<FlightProperties> m_flightProperties;
 
     std::unique_ptr<SGSocket> m_outgoingSocket;

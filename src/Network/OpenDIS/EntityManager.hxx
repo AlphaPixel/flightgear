@@ -1,4 +1,4 @@
-// EntityStateProcessor.hxx
+// EntityManager.hxx
 //
 // Copyright (C) 2021 - AlphaPixel (http://www.alphapixel.com)
 #pragma once
@@ -8,20 +8,45 @@
 #include <map>
 #include <memory>
 
-class EntityStateProcessor : public DIS::IPacketProcessor
+#include "PDUHandlers.hxx"
+
+class EntityManager : public EntityStatePDUHandler, public FirePDUHandler, public DetonationPDUHandler
 {
 public:
-    EntityStateProcessor(DIS::EntityStatePdu ownship);
-    virtual ~EntityStateProcessor();
+    EntityManager(DIS::EntityStatePdu ownship);
+    virtual ~EntityManager();
 
     typedef DIS::EntityStatePdu PduType;
 
-    // DIS::IPacketProcessor
-    void Process(const DIS::Pdu& packet) override;
+// TODO: Remove before shipping
+#ifndef NDEBUG
+    void PerformExtra();
+#endif    
 
 private:
-    bool ShouldIgnoreEntityPDU(const DIS::EntityStatePdu& entityPDU);
-    void ProcessEntityPDU(const DIS::EntityStatePdu& entityPDU);
+    // EntityStatePDUHandler
+    virtual void ProcessEntityStatePDU(const DIS::EntityStatePdu& entityPDU) override;
+
+    // FirePDUHandler
+    virtual void ProcessFirePDU(const DIS::FirePdu &firePDU) override;
+
+    // DetonationPDUHandler
+    virtual void ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU) override;
+
+private:
+    bool ShouldIgnorePDU(const DIS::Pdu &pdu);
+
+    // EntityState PDU Processing
+    bool ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& entityPDU);
+    void HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU);
+
+    // Fire PDU Processing
+    bool ShouldIgnoreFirePDU(const DIS::FirePdu &firePDU);
+    void HandleFirePDU(const DIS::FirePdu &firePDU);
+
+    // Detonation PDU Processing
+    bool ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &detonationPDU);
+    void HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU);
 
     DIS::EntityStatePdu m_ownship;
 

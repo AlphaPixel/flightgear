@@ -31,7 +31,7 @@
 #include <simgear/math/sg_geodesy.hxx>
 
 #include "OpenDIS.hxx"
-#include "OpenDIS/EntityStateProcessor.hxx"
+#include "OpenDIS/EntityManager.hxx"
 
 // OpenDIS headers
 #include <dis6/EntityStatePdu.h>
@@ -85,8 +85,22 @@ bool FGOpenDIS::open()
 
 	init_ownship();
 
-	m_entityStateProcessor.reset(new EntityStateProcessor(m_ownship));
-	m_incomingMessage->AddProcessor(static_cast<unsigned char>(PDUType::ENTITY_STATE), m_entityStateProcessor.get());
+	m_entityManager.reset(new EntityManager(m_ownship));
+
+	m_incomingMessage->AddProcessor(
+		static_cast<unsigned char>(PDUType::ENTITY_STATE), 
+		reinterpret_cast<EntityStatePDUHandler *>(m_entityManager.get())
+	);
+
+	m_incomingMessage->AddProcessor(
+		static_cast<unsigned char>(PDUType::FIRE), 
+		reinterpret_cast<FirePDUHandler *>(m_entityManager.get())
+	);
+
+	m_incomingMessage->AddProcessor(
+		static_cast<unsigned char>(PDUType::DETONATION), 
+		reinterpret_cast<DetonationPDUHandler *>(m_entityManager.get())
+	);
 
 	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));
 	m_outgoingSocket->open(SGProtocolDir::SG_IO_OUT);
@@ -136,6 +150,11 @@ bool FGOpenDIS::process()
 		while (length > 0);
     }
 
+#ifndef NDEBUG
+	// TODO: Remove before shipping
+	m_entityManager->PerformExtra();
+#endif	
+
 	return process_outgoing();
 }
 
@@ -172,10 +191,8 @@ bool FGOpenDIS::process_outgoing()
 	const auto altitude_in_feet = m_flightProperties->get_Altitude();
 
 	// Determine ECEF coordinates from Lat/Lon/Alt
-    const double meters_to_feet_scale_factor = 3.28084;
-
 	double ecef[3];
-	sgGeodToCart(latitude_in_radians, longitude_in_radians, altitude_in_feet / meters_to_feet_scale_factor, ecef);
+	sgGeodToCart(latitude_in_radians, longitude_in_radians, altitude_in_feet * SG_FEET_TO_METER, ecef);
 
 	//
 	// Update ownship from flight dynamics

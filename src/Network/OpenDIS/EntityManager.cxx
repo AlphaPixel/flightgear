@@ -1,7 +1,7 @@
-// EntityStateProcessor.hxx
+// EntityManager.hxx
 //
 // Copyright (C) 2021 - AlphaPixel (http://www.alphapixel.com)
-#include "EntityStateProcessor.hxx"
+#include "EntityManager.hxx"
 #include "EntityTypes.hxx"
 #include <Main/fg_props.hxx>
 #include <Model/modelmgr.hxx>
@@ -14,8 +14,6 @@
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
 static const size_t modelCount_T72 = 11;
-
-static const double meters_to_feet_scale_factor = 3.28084;
 
 static void ECEFtoLLA(const DIS::Vector3Double &ecef, double &latitude, double &longitude, double &altitude_in_meters)
 {
@@ -30,13 +28,13 @@ static double GetGroundLevelInFeet(const SGGeod& position)
     FGInterface* fdmState = fdm->getInterface();
     if (fdmState) 
     {
-        groundLevel = fdmState->get_groundlevel_m(position) * meters_to_feet_scale_factor;
+        groundLevel = fdmState->get_groundlevel_m(position) * SG_METER_TO_FEET;
     }
 
     return groundLevel;
 }
 
-EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
+EntityManager::EntityManager(DIS::EntityStatePdu ownship)
     : m_ownship(ownship)
 {
     // Set up model availibility arrays
@@ -59,32 +57,48 @@ EntityStateProcessor::EntityStateProcessor(DIS::EntityStatePdu ownship)
     }
 }
 
-EntityStateProcessor::~EntityStateProcessor()
+EntityManager::~EntityManager()
 {
 }
 
-bool EntityStateProcessor::ShouldIgnoreEntityPDU(const DIS::EntityStatePdu& packet)
+bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
+{
+    // TODO: Check exercise ID matches.
+    return false;
+}
+
+void EntityManager::ProcessEntityStatePDU(const DIS::EntityStatePdu &packet)
+{
+    if (!ShouldIgnoreEntityStatePDU(packet))
+    {
+        HandleEntityStatePDU(packet);
+    }
+}
+
+bool EntityManager::ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& packet)
 {
     bool shouldIgnore = true;
-
-    auto incomingEntityID = packet.getEntityID();
-    auto ownshipEntityID = m_ownship.getEntityID();
-
-    // Only pay attention to PDUs with site and application IDs the same as ownship.
-    if (incomingEntityID.getSite() == ownshipEntityID.getSite() &&
-        incomingEntityID.getApplication() == ownshipEntityID.getApplication())
+    if (!ShouldIgnorePDU(packet))
     {
-        // Ignore PDUs that are from our ownship (since we'll receive PDUs we send ourselves)
-        if (incomingEntityID.getEntity() != ownshipEntityID.getEntity())
+        auto incomingEntityID = packet.getEntityID();
+        auto ownshipEntityID = m_ownship.getEntityID();
+
+        // Only pay attention to PDUs with site and application IDs the same as ownship.
+        if (incomingEntityID.getSite() == ownshipEntityID.getSite() &&
+            incomingEntityID.getApplication() == ownshipEntityID.getApplication())
         {
-            shouldIgnore = false;
+            // Ignore PDUs that are from our ownship (since we'll receive PDUs we send ourselves)
+            if (incomingEntityID.getEntity() != ownshipEntityID.getEntity())
+            {
+                shouldIgnore = false;
+            }
         }
     }
 
     return shouldIgnore;
 }
 
-void EntityStateProcessor::ProcessEntityPDU(const DIS::EntityStatePdu& entityPDU)
+void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 {
     // Find the entity in the scene
     const auto i = m_entityMap.find(entityPDU.getEntityID().getEntity());
@@ -100,7 +114,43 @@ void EntityStateProcessor::ProcessEntityPDU(const DIS::EntityStatePdu& entityPDU
     RemoveExpiredEntities();
 }
 
-void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
+void EntityManager::ProcessFirePDU(const DIS::FirePdu &packet)
+{
+    if (!ShouldIgnoreFirePDU(packet))
+    {
+        HandleFirePDU(packet);
+    }
+}
+
+bool EntityManager::ShouldIgnoreFirePDU(const DIS::FirePdu &packet)
+{
+    return ShouldIgnorePDU(packet);
+}
+
+void EntityManager::HandleFirePDU(const DIS::FirePdu &packet)
+{
+    // TODO:
+}
+
+void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &packet)
+{
+    if (!ShouldIgnoreDetonationPDU(packet))
+    {
+        HandleDetonationPDU(packet);
+    }
+}
+
+bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &packet)
+{
+    return ShouldIgnoreDetonationPDU(packet);
+}
+
+void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &packet)
+{
+    // TODO:
+}
+
+void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
 {
     std::unique_ptr<Entity> entity;
     if (T72Tank::matches(entityPDU.getEntityType()))
@@ -127,7 +177,7 @@ void EntityStateProcessor::AddEntityToScene(const DIS::EntityStatePdu& entityPDU
     }
 }
 
-void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
+void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
 {
     auto mmss = globals->get_subsystem("model-manager");
     auto mm = dynamic_cast<FGModelMgr*>(mmss);
@@ -145,7 +195,7 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         // Change from radians to degrees and from meters to feet.
         auto latitudeInDegrees = osg::RadiansToDegrees(latitudeInRadians);
         auto longitudeInDegrees = osg::RadiansToDegrees(longitudeInRadians);
-        auto altitudeInFeet = altitudeInMeters * meters_to_feet_scale_factor;
+        auto altitudeInFeet = altitudeInMeters * SG_METER_TO_FEET;
 
         // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
         auto position = SGGeod::fromDegFt(longitudeInDegrees, latitudeInDegrees, altitudeInFeet);
@@ -165,8 +215,12 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
         // and will overwrite what's written in the model.
-        auto model = modelInstance->model;
-        model->setPosition(position);
+//        auto model = modelInstance->model;
+//        model->setPosition(position);
+
+        auto q = SGQuatd::fromEulerRad(psi, theta, phi);
+//        model->setOrientation(q);
+//        model->update();
 
         // NOTES:
         // Euler angle rotation sequence (per DIS spec)
@@ -178,19 +232,19 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         // X - points forward
         // Y - points to the right
         // Z - points down
+        //
+        // FG axis orientation
+        // X - 
+        // Y - 
+        // Z - points up
 
-        // NOTE: DIS and FG don't always agree on orientations.  These are the various corrections.
-        auto headingCorrection = 3.14159;   // Spin the model 180 degrees in heading.
-        // auto pitchCorrection = 0.0;
-        // auto rollCorrection = 0.0;
+        // auto heading = psi;
+        // auto pitch = theta;
+        // auto roll = phi;
 
-        auto heading = phi + headingCorrection;
-        //auto pitch = psi;
-        //auto roll = psi;
-
-        auto q = SGQuatd::fromEulerRad(psi, theta, phi);
-        model->setOrientation(q);
-        model->update();
+        auto heading = phi + 3.14159;     // phi appears to be the correct
+        auto pitch = psi - (3.14159 / 2);  // close?
+        auto roll = theta + (3.14159 / 2);
 
         // Set the values in the property system.
         const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
@@ -200,33 +254,23 @@ void EntityStateProcessor::UpdateEntityInScene(Entity &entity, const DIS::Entity
         fgSetDouble(propertyPath + "/elevation-ft", altitudeInFeet);
 
         fgSetDouble(propertyPath + "/heading-deg", osg::RadiansToDegrees(heading));
-//        fgSetDouble(propertyPath + "/pitch-deg", osg::RadiansToDegrees(pitch));
-//        fgSetDouble(propertyPath + "/roll-deg", osg::RadiansToDegrees(roll));
+        fgSetDouble(propertyPath + "/pitch-deg", osg::RadiansToDegrees(pitch));
+        fgSetDouble(propertyPath + "/roll-deg", osg::RadiansToDegrees(roll));
     }
 }
 
-void EntityStateProcessor::RemoveExpiredEntities()
+void EntityManager::RemoveExpiredEntities()
 {
 }
 
-// DIS::IPacketProcessor
-void EntityStateProcessor::Process(const DIS::Pdu& packet)
-{
-    const DIS::EntityStatePdu& entityPDU = static_cast<const DIS::EntityStatePdu&>(packet);
-    if (!ShouldIgnoreEntityPDU(entityPDU))
-    {
-        ProcessEntityPDU(entityPDU);
-    }
-}
-
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex)
 {
     return std::unique_ptr<Entity>(new Entity(entityPDU, modelIndex));
 }
 
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateT72(const DIS::EntityStatePdu& entityPDU)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateT72(const DIS::EntityStatePdu& entityPDU)
 {
-    std::unique_ptr<EntityStateProcessor::Entity> entity;
+    std::unique_ptr<EntityManager::Entity> entity;
     if (!m_availableModels_T72.empty())
     {
         entity = CreateEntity(entityPDU, m_availableModels_T72.back());
@@ -242,9 +286,9 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateT72(co
     return entity;
 }
 
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateM1(const DIS::EntityStatePdu& entityPDU)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateM1(const DIS::EntityStatePdu& entityPDU)
 {
-    std::unique_ptr<EntityStateProcessor::Entity> entity;
+    std::unique_ptr<EntityManager::Entity> entity;
     if (!m_availableModels_M1.empty())
     {
         entity = CreateEntity(entityPDU, m_availableModels_M1.back());
@@ -260,9 +304,9 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateM1(con
     return entity;
 }
 
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateAH64(const DIS::EntityStatePdu& entityPDU)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateAH64(const DIS::EntityStatePdu& entityPDU)
 {
-    std::unique_ptr<EntityStateProcessor::Entity> entity;
+    std::unique_ptr<EntityManager::Entity> entity;
     if (!m_availableModels_AH64.empty())
     {
         entity = CreateEntity(entityPDU, m_availableModels_AH64.back());
@@ -278,9 +322,9 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateAH64(c
     return entity;
 }
 
-std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateUH60(const DIS::EntityStatePdu& entityPDU)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::EntityStatePdu& entityPDU)
 {
-    std::unique_ptr<EntityStateProcessor::Entity> entity;
+    std::unique_ptr<EntityManager::Entity> entity;
     if (!m_availableModels_UH60.empty())
     {
         entity = CreateEntity(entityPDU, m_availableModels_UH60.back());
@@ -295,3 +339,37 @@ std::unique_ptr<EntityStateProcessor::Entity> EntityStateProcessor::CreateUH60(c
 
     return entity;
 }
+
+#ifndef NDEBUG
+void EntityManager::PerformExtra()
+{
+#if 0 // TODO: Simple test logic, remove before shipping
+    auto mmss = globals->get_subsystem("model-manager");
+    auto mm = dynamic_cast<FGModelMgr*>(mmss);
+
+    auto modelInstances = mm->getInstances();
+
+    for (size_t modelIndex = 0; modelIndex < modelInstances.size(); ++modelIndex)
+    {
+        //auto model = modelInstance->model;
+        const std::string propertyPath("/models/model" + (modelIndex == 0 ? "" : ("[" + std::to_string(modelIndex) + "]")));
+        auto specificPropertyPath = propertyPath + "/heading-deg";
+        auto value = fgGetDouble(specificPropertyPath);
+        if (value != 45)
+        {
+            fgSetDouble(specificPropertyPath, 45);
+        }
+
+        specificPropertyPath = propertyPath + "/pitch-deg";
+        value = fgGetDouble(specificPropertyPath);
+        value += 1;
+        fgSetDouble(specificPropertyPath, value);
+
+        specificPropertyPath = propertyPath + "/roll-deg";
+        value = fgGetDouble(specificPropertyPath);
+        value += 2;
+        fgSetDouble(specificPropertyPath, value);
+    }
+#endif    
+}
+#endif // !NDEBUG

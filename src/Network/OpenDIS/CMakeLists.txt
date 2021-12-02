@@ -1,9 +1,9 @@
 set(SOURCES
-    EntityStateProcessor.cxx
+    EntityManager.cxx
 )
 
 set(HEADERS
-    EntityStateProcessor.hxx
+    EntityManager.hxx
 )
 
 flightgear_component(OpenDIS "${SOURCES}" "${HEADERS}")

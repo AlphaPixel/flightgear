@@ -15,8 +15,8 @@
 
 #include <iostream>
 
-const unsigned short site_id = 1767;
-const unsigned short application_id = 3534;
+const unsigned short site_id = 22317;
+const unsigned short application_id = 44635;
 
 namespace Example
 {
