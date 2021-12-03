@@ -10,6 +10,16 @@
 
 #include "PDUHandlers.hxx"
 
+// EntityIDCompare - custom comparison functor for std::map<>
+struct EntityIDCompare 
+{
+    bool operator()(const DIS::EntityID &a, const DIS::EntityID &b) const 
+    {
+        return a.getEntity() < b.getEntity();
+    }
+};
+
+// EntityManager - class that handles Entity management (create, update, delete)
 class EntityManager : public EntityStatePDUHandler, public FirePDUHandler, public DetonationPDUHandler
 {
 public:
@@ -80,5 +90,6 @@ private:
     std::vector<size_t> m_availableModels_T72;
     std::vector<size_t> m_availableModels_UH60;
 
-    std::map<unsigned short, Entity> m_entityMap;   // Keyed on entity ID.
+    // EntityID -> Entity map
+    std::map<DIS::EntityID, Entity, EntityIDCompare> m_entityMap;
 };

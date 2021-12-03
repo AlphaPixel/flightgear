@@ -101,7 +101,7 @@ bool EntityManager::ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& packet
 void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 {
     // Find the entity in the scene
-    const auto i = m_entityMap.find(entityPDU.getEntityID().getEntity());
+    const auto i = m_entityMap.find(entityPDU.getEntityID());
     if (i == m_entityMap.end())
     {
         AddEntityToScene(entityPDU);
@@ -114,40 +114,48 @@ void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
     RemoveExpiredEntities();
 }
 
-void EntityManager::ProcessFirePDU(const DIS::FirePdu &packet)
+void EntityManager::ProcessFirePDU(const DIS::FirePdu &firePDU)
 {
-    if (!ShouldIgnoreFirePDU(packet))
+    if (!ShouldIgnoreFirePDU(firePDU))
     {
-        HandleFirePDU(packet);
+        HandleFirePDU(firePDU);
     }
 }
 
-bool EntityManager::ShouldIgnoreFirePDU(const DIS::FirePdu &packet)
+bool EntityManager::ShouldIgnoreFirePDU(const DIS::FirePdu &firePDU)
 {
-    return ShouldIgnorePDU(packet);
+    return ShouldIgnorePDU(firePDU);
 }
 
-void EntityManager::HandleFirePDU(const DIS::FirePdu &packet)
+void EntityManager::HandleFirePDU(const DIS::FirePdu &firePDU)
 {
-    // TODO:
-}
-
-void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &packet)
-{
-    if (!ShouldIgnoreDetonationPDU(packet))
+    auto firingEntity = m_entityMap.find(firePDU.getFiringEntityID());
+    if (firingEntity != m_entityMap.end())
     {
-        HandleDetonationPDU(packet);
+        // TODO: Add firing animation to 'firingEntity'
     }
 }
 
-bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &packet)
+void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
-    return ShouldIgnoreDetonationPDU(packet);
+    if (!ShouldIgnoreDetonationPDU(detonationPDU))
+    {
+        HandleDetonationPDU(detonationPDU);
+    }
 }
 
-void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &packet)
+bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
-    // TODO:
+    return ShouldIgnoreDetonationPDU(detonationPDU);
+}
+
+void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU)
+{
+    auto targetEntity = m_entityMap.find(detonationPDU.getTargetEntityID());
+    if (targetEntity != m_entityMap.end())
+    {
+        // TODO: Add detonation animation to 'targetEntity'
+    }
 }
 
 void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
@@ -173,7 +181,7 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
     // If an entity was created above, add it to the map
     if (entity)
     {
-        m_entityMap.insert(std::make_pair(entityPDU.getEntityID().getEntity(), *entity));
+        m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), *entity));
     }
 }
 
@@ -212,15 +220,17 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         auto theta = orientation.getTheta();
         auto phi = orientation.getPhi();
 
+        //SG_LOG(SG_IO, SG_ALERT, "Orientation: " << std::to_string(osg::RadiansToDegrees(psi)) << ", " << std::to_string(osg::RadiansToDegrees(theta)) << ", " << std::to_string(osg::RadiansToDegrees(phi)));
+
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
         // and will overwrite what's written in the model.
-//        auto model = modelInstance->model;
-//        model->setPosition(position);
+        auto model = modelInstance->model;
+        model->setPosition(position);
 
         auto q = SGQuatd::fromEulerRad(psi, theta, phi);
-//        model->setOrientation(q);
-//        model->update();
+        model->setOrientation(q);
+        model->update();
 
         // NOTES:
         // Euler angle rotation sequence (per DIS spec)
@@ -238,20 +248,16 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         // Y - 
         // Z - points up
 
-        // auto heading = psi;
-        // auto pitch = theta;
-        // auto roll = phi;
-
-        auto heading = phi + 3.14159;     // phi appears to be the correct
-        auto pitch = psi - (3.14159 / 2);  // close?
-        auto roll = theta + (3.14159 / 2);
+        auto heading = psi;
+        auto pitch = theta;
+        auto roll = phi;
 
         // Set the values in the property system.
         const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
 
         fgSetDouble(propertyPath + "/latitude-deg", latitudeInDegrees);
         fgSetDouble(propertyPath + "/longitude-deg", longitudeInDegrees);
-        fgSetDouble(propertyPath + "/elevation-ft", altitudeInFeet);
+        fgSetDouble(propertyPath + "/elevation-ft", altitudeInFeet + 150);
 
         fgSetDouble(propertyPath + "/heading-deg", osg::RadiansToDegrees(heading));
         fgSetDouble(propertyPath + "/pitch-deg", osg::RadiansToDegrees(pitch));
