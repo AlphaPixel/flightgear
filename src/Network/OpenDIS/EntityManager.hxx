@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "PDUHandlers.hxx"
+#include "Main/fg_props.hxx"
 
 // EntityIDCompare - custom comparison functor for std::map<>
 struct EntityIDCompare 
@@ -20,7 +21,11 @@ struct EntityIDCompare
 };
 
 // EntityManager - class that handles Entity management (create, update, delete)
-class EntityManager : public EntityStatePDUHandler, public FirePDUHandler, public DetonationPDUHandler
+class EntityManager : 
+    virtual public SGPropertyChangeListener,
+    virtual public EntityStatePDUHandler, 
+    virtual public FirePDUHandler, 
+    virtual public DetonationPDUHandler
 {
 public:
     EntityManager(DIS::EntityStatePdu ownship);
@@ -34,6 +39,11 @@ public:
 #endif    
 
 private:
+    // SGPropertyChangeListener
+    virtual void valueChanged(SGPropertyNode * node) override;
+    virtual void childAdded(SGPropertyNode * parent, SGPropertyNode * child) override;
+    virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child) override;
+
     // EntityStatePDUHandler
     virtual void ProcessEntityStatePDU(const DIS::EntityStatePdu& entityPDU) override;
 
