@@ -120,6 +120,54 @@ namespace
                 assert(is_close_thousandth(check.GetZAxis().y(),  0.0));
                 assert(is_close_thousandth(check.GetZAxis().z(),  0.0));
             }
+
+            {
+                o.setPsi(Angle::fromDegrees(90.0).inRadians());
+                o.setTheta(Angle::fromDegrees(90.0).inRadians());
+                o.setPhi(0);
+
+                auto check = base;
+                check.rotate(o);
+
+                // Check N
+                assert(is_close_thousandth(check.GetXAxis().x(),  0.0));
+                assert(is_close_thousandth(check.GetXAxis().y(), -1.0));
+                assert(is_close_thousandth(check.GetXAxis().z(),  0.0));
+
+                // Check E
+                assert(is_close_thousandth(check.GetYAxis().x(), -1.0));
+                assert(is_close_thousandth(check.GetYAxis().y(),  0.0));
+                assert(is_close_thousandth(check.GetYAxis().z(),  0.0));
+
+                // Check D
+                assert(is_close_thousandth(check.GetZAxis().x(),  0.0));
+                assert(is_close_thousandth(check.GetZAxis().y(),  0.0));
+                assert(is_close_thousandth(check.GetZAxis().z(), -1.0));
+            }
+
+            {
+                o.setPsi(Angle::fromDegrees(90.0).inRadians());
+                o.setTheta(Angle::fromDegrees(90.0).inRadians());
+                o.setPhi(Angle::fromDegrees(90.0).inRadians());
+
+                auto check = base;
+                check.rotate(o);
+
+                // Check N
+                assert(is_close_thousandth(check.GetXAxis().x(),  1.0));
+                assert(is_close_thousandth(check.GetXAxis().y(),  0.0));
+                assert(is_close_thousandth(check.GetXAxis().z(),  0.0));
+
+                // Check E
+                assert(is_close_thousandth(check.GetYAxis().x(),  0.0));
+                assert(is_close_thousandth(check.GetYAxis().y(), -1.0));
+                assert(is_close_thousandth(check.GetYAxis().z(),  0.0));
+
+                // Check D
+                assert(is_close_thousandth(check.GetZAxis().x(),  0.0));
+                assert(is_close_thousandth(check.GetZAxis().y(),  0.0));
+                assert(is_close_thousandth(check.GetZAxis().z(), -1.0));
+            }
         }
     };
 
