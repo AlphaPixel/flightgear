@@ -336,10 +336,9 @@ void Frame::rotate(const SGQuatd &q)
 
 SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
 {
-#if 1
     static const auto unit = SGQuatd::unit();
     auto r = SGQuatd::fromRotateTo(from.GetXAxis(), to.GetXAxis());
-    // If a unit quaternion was returned, the X axes of both frame was the same.  We need
+    // If a unit quaternion was returned, the X axes of both frames was the same.  We need
     // to check another axis.   If *that* axis is also coincident, then the frames are the same
     // and we can keep going.
     if (r == unit)
@@ -348,47 +347,4 @@ SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
     }
 
     return r;
-    // double psi, theta, phi;
-    // r.getEulerRad(psi, theta, phi);
-    // auto result = DIS::Orientation();
-    // result.setPsi(psi);
-    // result.setTheta(theta);
-    // result.setPhi(phi);
-#else
-    // Returns Euler angles (in the form of a DIS::Orientation) that
-    // goes from frame 'b' to frame 'a' (angles = a - b)
-
-    // (https://apps.dtic.mil/sti/pdfs/ADA484864.pdf - figure 4.19)
-    const SGVec3d x0 = _0.GetXAxis();
-    const SGVec3d y0 = _0.GetYAxis();
-    const SGVec3d z0 = _0.GetZAxis();
-
-    const SGVec3d y2 = _2.GetYAxis();
-    const SGVec3d z2 = _2.GetZAxis();
-
-    const SGVec3d x3 = _3.GetXAxis();
-    const SGVec3d y3 = _3.GetYAxis();
-    const SGVec3d z3 = _3.GetZAxis();
-
-    auto result = DIS::Orientation();
-
-    // psi = atan2( dot(x3,y0), dot(x3,x0) );
-    const double psi = std::atan2(dot(x3,y0), dot(x3,x0));
-    result.setPsi(psi);
-
-    // theta = atan2( -dot(x3,z0), sqrt( (dot(x3,x0))^2 + (dot(x3,y0))^2) );    
-    const double x3_dot_x0 = dot(x3, x0);
-    const double x3_dot_x0_squared = x3_dot_x0 * x3_dot_x0;
-
-    const double x3_dot_y0 = dot(x3, y0);
-    const double x3_dot_y0_squared = x3_dot_y0 * x3_dot_y0;
-    const double theta = std::atan2(-dot(x3,z0), std::sqrt(x3_dot_x0_squared + x3_dot_y0_squared));
-    result.setTheta(theta);
-
-    // phi = atan2(dot(y3,z2), dot(y3,y2));
-    auto y3_dot_z2 = dot(y3, z2);
-    auto y3_dot_y2 = dot(y3, y2);
-    const double phi = std::atan2(y3_dot_z2, y3_dot_y2);
-    result.setPhi(phi);
-#endif
 }

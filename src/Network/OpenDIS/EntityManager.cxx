@@ -110,6 +110,14 @@ bool EntityManager::ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& packet
                 shouldIgnore = false;
             }
         }
+        else 
+        {
+            SG_LOG(SG_IO, SG_ALERT, "Ignoring PDU with site: "
+                << std::to_string(incomingEntityID.getSite())
+                << ", application: "
+                << std::to_string(incomingEntityID.getApplication())
+            );
+        }
     }
 
     return shouldIgnore;
@@ -308,27 +316,20 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
 
         // Calculate orientation
         // Step 1 - Get the local "base" NED frame (in ECEF space) at the entity's lat/lon.
+
+        const auto baseECEF = Frame::fromECEFBase();
         const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
 
         // Step 2 - Rotate the local NED frame (in ECEF) space around the ECEF axes
-        //          by the Euler anglea stored in the incoming DIS orientation.
-        auto NED = baseNED;
-        NED.rotate(entityPDU.getEntityOrientation());
+        //          by the Euler angles stored in the incoming DIS orientation.
+        // auto entityNED = baseNED;
+        // entityNED.rotate(entityPDU.getEntityOrientation());
+        auto entityOrientationECEF = baseECEF;
+        entityOrientationECEF.rotate(entityPDU.getEntityOrientation());
 
-        // Step 3 - Calculate the quaternion that rotates 'baseNED' to 'NED'.
-        auto q = Frame::GetRotateTo(baseNED, NED);
-
-        // Get the orientation of the model from the PDU
-        // auto orientation = entityPDU.getEntityOrientation();
-        // auto psi = orientation.getPsi();
-        // auto theta = orientation.getTheta();
-        // auto phi = orientation.getPhi();
-
-        // // Calculate the orientation in ECEF (which is what DIS expects)
-        // auto o_ecef = SGQuatd::fromEulerRad(psi, theta, phi);
-
-
-        //SG_LOG(SG_IO, SG_ALERT, "Orientation: " << std::to_string(osg::RadiansToDegrees(psi)) << ", " << std::to_string(osg::RadiansToDegrees(theta)) << ", " << std::to_string(osg::RadiansToDegrees(phi)));
+        // Step 3 - Calculate the quarternion that rotates 'baseNED' to 'NED'.
+        // auto q = Frame::GetRotateTo(baseNED, entityNED);
+        auto q = Frame::GetRotateTo(baseNED, entityOrientationECEF);
 
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
@@ -339,23 +340,6 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         // auto q = SGQuatd::fromEulerRad(psi, theta, phi);
         // model->setOrientation(q);
         // model->update();
-
-        // NOTES:
-        // Euler angle rotation sequence (per DIS spec)
-        // Z Axis Rotation (first) - Psi
-        // Y Axis Rotation (second) - Theta
-        // X Axis Rotation (third) - Phi
-        //
-        // DIS axis orientation, 
-        // X - points forward
-        // Y - points to the right
-        // Z - points down
-        //
-        // FG axis orientation
-        // X - 
-        // Y - 
-        // Z - points up
-
 
         // Set the values in the property system.
         const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
@@ -368,8 +352,20 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         q.getEulerDeg(heading, pitch, roll);
 
         fgSetDouble(propertyPath + "/heading-deg", heading);
-        // fgSetDouble(propertyPath + "/pitch-deg", pitch);
-        // fgSetDouble(propertyPath + "/roll-deg", roll);
+        //fgSetDouble(propertyPath + "/pitch-deg", pitch);
+        //fgSetDouble(propertyPath + "/roll-deg", roll);
+
+        SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
+            << std::to_string(entityLLA.GetLatitude().inDegrees()) 
+            << "," 
+            << std::to_string(entityLLA.GetLongitude().inDegrees()) 
+            << ",     " 
+            << std::to_string(heading)
+            << ","
+            << std::to_string(pitch)
+            << ","
+            << std::to_string(roll)
+        );
     }
 }
 
