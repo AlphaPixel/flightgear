@@ -40,6 +40,9 @@ public:
 
     void rotate(const Angle &a, const SGVec3d &axis);
     void rotate(const DIS::Orientation &orientation);
+    void rotate(const SGQuatd &q);
+
+    static SGQuatd GetRotateTo(const Frame &from, const Frame &to);
 
 private:
     Frame(SGVec3d x, SGVec3d y, SGVec3d z)
@@ -51,5 +54,3 @@ private:
 
     SGVec3d _x, _y, _z;
 };
-
-DIS::Orientation operator - (const Frame &a, const Frame &b);   // Return euler angles to get from b to a

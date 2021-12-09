@@ -21,7 +21,7 @@ namespace
         {
             testNED();
             testDISOrientation();
-            testFrameDelta();
+            testECEFtoNEDRotations();
         }
 
         void testNED()
@@ -201,75 +201,96 @@ namespace
             }
         }
 
-        void testFrameDelta()
+        void testECEFtoNEDRotations()
         {
-            // Start with a known frame at the prime meridian and equator
-            const Frame base = Frame::fromLatLon(Angle::fromRadians(0), Angle::fromRadians(0));
-
-            // Create a simple oriention with a single rotation in Psi() - around the north pole in ECEF
-            DIS::Orientation o;
-            
             {
-                o.setPsi(0);
-                o.setTheta(0);
-                o.setPhi(0);
+                // A null rotation in ECEF space should be a null rotation in NED space.
+                DIS::Orientation ecef;
+                ecef.setPsi(Angle::fromDegrees(0.0).inRadians());
+                ecef.setTheta(Angle::fromDegrees(0).inRadians());
+                ecef.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto check = base;
-                check.rotate(o);
+                DIS::Orientation ned;
+                ned.setPsi(Angle::fromDegrees(0).inRadians());
+                ned.setTheta(Angle::fromDegrees(0).inRadians());
+                ned.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto eulerAngles = check - base;
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPsi()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getTheta()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPhi()).inDegrees(), 0.0));
+                verifyFrameRotation(ecef, ned);
             }
-#if 0
+
             {
                 // A change in Psi() in ECEF space at the base frame is a bank change (in NED space)
                 // of 90 degrees.
-                o.setPsi(Angle::fromDegrees(90.0).inRadians());
-                o.setTheta(0);
-                o.setPhi(0);
+                DIS::Orientation ecef;
+                ecef.setPsi(Angle::fromDegrees(90).inRadians());
+                ecef.setTheta(Angle::fromDegrees(0).inRadians());
+                ecef.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto check = base;
-                check.rotate(o);
+                DIS::Orientation ned;
+                ned.setPsi(Angle::fromDegrees(0).inRadians());
+                ned.setTheta(Angle::fromDegrees(0).inRadians());
+                ned.setPhi(Angle::fromDegrees(90).inRadians());
 
-                auto eulerAngles = check - base;
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPsi()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getTheta()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPhi()).inDegrees(), 90.0));
+                verifyFrameRotation(ecef, ned);
             }
-#endif
+
             {
                 // A change in Theta() in ECEF space at the base frame is a pitch change (in NED space)
                 // of 90 degrees.
-                o.setPsi(0);
-                o.setTheta(Angle::fromDegrees(90.0).inRadians());
-                o.setPhi(0);
+                DIS::Orientation ecef;
+                ecef.setPsi(Angle::fromDegrees(0).inRadians());
+                ecef.setTheta(Angle::fromDegrees(90).inRadians());
+                ecef.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto check = base;
-                check.rotate(o);
+                DIS::Orientation ned;
+                ned.setPsi(Angle::fromDegrees(0).inRadians());
+                ned.setTheta(Angle::fromDegrees(90).inRadians());
+                ned.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto eulerAngles = check - base;
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPsi()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getTheta()).inDegrees(), 90.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPhi()).inDegrees(), 0.0));
+                verifyFrameRotation(ecef, ned);
             }
 
             {
                 // A change in Phi() in ECEF space at the base frame is a heading change (in NED space)
                 // of -90 degrees.
-                o.setPsi(0);
-                o.setTheta(0);
-                o.setPhi(Angle::fromDegrees(90.0).inRadians());
+                DIS::Orientation ecef;
+                ecef.setPsi(Angle::fromDegrees(0).inRadians());
+                ecef.setTheta(Angle::fromDegrees(0).inRadians());
+                ecef.setPhi(Angle::fromDegrees(90).inRadians());
 
-                auto check = base;
-                check.rotate(o);
+                DIS::Orientation ned;
+                ned.setPsi(Angle::fromDegrees(-90).inRadians());
+                ned.setTheta(Angle::fromDegrees(0).inRadians());
+                ned.setPhi(Angle::fromDegrees(0).inRadians());
 
-                auto eulerAngles = check - base;
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPsi()).inDegrees(), -90.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getTheta()).inDegrees(), 0.0));
-                assert(is_close_thousandth(Angle::fromRadians(eulerAngles.getPhi()).inDegrees(), 0.0));
+                verifyFrameRotation(ecef, ned);
             }
+        }
+
+        // Verifies that an ECEF orientation matches the corresponding NED orientation.
+        void verifyFrameRotation(const DIS::Orientation &ecef, const DIS::Orientation &ned)
+        {
+            // Start with a known frame at the prime meridian and equator
+            const Frame base = Frame::fromLatLon(Angle::fromRadians(0), Angle::fromRadians(0));
+
+            auto check = base;
+            check.rotate(ecef);    // ECEF space rotation
+
+            auto q = Frame::GetRotateTo(base, check);
+
+            // Verify the rotation actually rotates 'base' to 'check' (by rerotating a new frame named c2)
+            auto c2 = base;
+            c2.rotate(q);       // ECEF space rotation
+            assert(is_close_thousandth(check, c2));
+
+            // Create a quarternion (in NED space) that matches the expected resulting Euler angles from 'base' to 'check'.  Rotate
+            // a new copy of 'base' by that much and compare the resulting frame with 'check'.
+            auto c3 = base;
+            c3.rotate(SGQuatd::fromAngleAxis(Angle::fromRadians(ned.getPsi()).inRadians(), -c3.GetZAxis()));
+            c3.rotate(SGQuatd::fromAngleAxis(Angle::fromRadians(ned.getTheta()).inRadians(), -c3.GetYAxis()));
+            c3.rotate(SGQuatd::fromAngleAxis(Angle::fromRadians(ned.getPhi()).inRadians(), -c3.GetXAxis()));
+
+            assert(is_close_thousandth(check, c3));
         }
     };
 
@@ -290,10 +311,7 @@ Frame Frame::fromLatLon(Angle latitude, Angle longitude)
 void Frame::rotate(const Angle &angle, const SGVec3d &axis)
 {
     const auto c = SGQuatd::fromAngleAxis(angle.inRadians(), axis);
-
-    _x = c.transform(_x);
-    _y = c.transform(_y);
-    _z = c.transform(_z);
+    rotate(c);
 }
 
 void Frame::rotate(const DIS::Orientation &orientation)
@@ -309,17 +327,44 @@ void Frame::rotate(const DIS::Orientation &orientation)
     rotate(Angle::fromRadians(orientation.getPhi()), -ecefFrame.GetXAxis());
 }
 
-DIS::Orientation operator - (const Frame &a, const Frame &b)
+void Frame::rotate(const SGQuatd &q)
 {
+    _x = q.transform(_x);
+    _y = q.transform(_y);
+    _z = q.transform(_z);
+}
+
+SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
+{
+#if 1
+    static const auto unit = SGQuatd::unit();
+    auto r = SGQuatd::fromRotateTo(from.GetXAxis(), to.GetXAxis());
+    // If a unit quaternion was returned, the X axes of both frame was the same.  We need
+    // to check another axis.   If *that* axis is also coincident, then the frames are the same
+    // and we can keep going.
+    if (r == unit)
+    {
+        r = SGQuatd::fromRotateTo(from.GetYAxis(), to.GetYAxis());
+    }
+
+    return r;
+    // double psi, theta, phi;
+    // r.getEulerRad(psi, theta, phi);
+    // auto result = DIS::Orientation();
+    // result.setPsi(psi);
+    // result.setTheta(theta);
+    // result.setPhi(phi);
+#else
     // Returns Euler angles (in the form of a DIS::Orientation) that
     // goes from frame 'b' to frame 'a' (angles = a - b)
 
     // (https://apps.dtic.mil/sti/pdfs/ADA484864.pdf - figure 4.19)
-    const Frame &_0 = b;
-    const Frame &_3 = a;    
     const SGVec3d x0 = _0.GetXAxis();
     const SGVec3d y0 = _0.GetYAxis();
     const SGVec3d z0 = _0.GetZAxis();
+
+    const SGVec3d y2 = _2.GetYAxis();
+    const SGVec3d z2 = _2.GetZAxis();
 
     const SGVec3d x3 = _3.GetXAxis();
     const SGVec3d y3 = _3.GetYAxis();
@@ -328,7 +373,8 @@ DIS::Orientation operator - (const Frame &a, const Frame &b)
     auto result = DIS::Orientation();
 
     // psi = atan2( dot(x3,y0), dot(x3,x0) );
-    result.setPsi(std::atan2(dot(x3,y0), dot(x3,x0)));
+    const double psi = std::atan2(dot(x3,y0), dot(x3,x0));
+    result.setPsi(psi);
 
     // theta = atan2( -dot(x3,z0), sqrt( (dot(x3,x0))^2 + (dot(x3,y0))^2) );    
     const double x3_dot_x0 = dot(x3, x0);
@@ -336,14 +382,13 @@ DIS::Orientation operator - (const Frame &a, const Frame &b)
 
     const double x3_dot_y0 = dot(x3, y0);
     const double x3_dot_y0_squared = x3_dot_y0 * x3_dot_y0;
-    result.setTheta(std::atan2(-dot(x3,z0), std::sqrt(x3_dot_x0_squared + x3_dot_y0_squared)));
+    const double theta = std::atan2(-dot(x3,z0), std::sqrt(x3_dot_x0_squared + x3_dot_y0_squared));
+    result.setTheta(theta);
 
     // phi = atan2(dot(y3,z2), dot(y3,y2));
-    // const SGQuatd second = SGQuatd::fromEulerRad(ecef.getPsi(), ecef.getTheta(), 0.0);
-    // const auto y2 = second.transform(y0);
-    // const auto z2 = second.transform(z0);
-    //phi = std::atan2(dot(y3, z2), dot(y3, y2));
-    result.setPhi(0);
-
-    return result; 
+    auto y3_dot_z2 = dot(y3, z2);
+    auto y3_dot_y2 = dot(y3, y2);
+    const double phi = std::atan2(y3_dot_z2, y3_dot_y2);
+    result.setPhi(phi);
+#endif
 }

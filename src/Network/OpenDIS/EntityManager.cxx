@@ -315,9 +315,8 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         auto NED = baseNED;
         NED.rotate(entityPDU.getEntityOrientation());
 
-        // Step 3 - Calculate the Euler angles that are used to get from baseNED to NED.
-        //          These angles are the new orientation of the entity relative to NED.
-        auto eulerAngles = NED - baseNED;
+        // Step 3 - Calculate the quaternion that rotates 'baseNED' to 'NED'.
+        auto q = Frame::GetRotateTo(baseNED, NED);
 
         // Get the orientation of the model from the PDU
         // auto orientation = entityPDU.getEntityOrientation();
@@ -365,13 +364,12 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
         fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet() + 30);
 
-        auto heading = eulerAngles.getPsi();
-        auto pitch = eulerAngles.getTheta();
-        auto roll = eulerAngles.getPhi();
+        double heading, pitch, roll;
+        q.getEulerDeg(heading, pitch, roll);
 
-        fgSetDouble(propertyPath + "/heading-deg", osg::RadiansToDegrees(heading));
-        fgSetDouble(propertyPath + "/pitch-deg", osg::RadiansToDegrees(pitch));
-        fgSetDouble(propertyPath + "/roll-deg", osg::RadiansToDegrees(roll));
+        fgSetDouble(propertyPath + "/heading-deg", heading);
+        // fgSetDouble(propertyPath + "/pitch-deg", pitch);
+        // fgSetDouble(propertyPath + "/roll-deg", roll);
     }
 }
 
