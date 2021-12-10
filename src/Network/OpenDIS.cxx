@@ -32,11 +32,12 @@
 
 #include "OpenDIS.hxx"
 #include "OpenDIS/EntityManager.hxx"
+#include "OpenDIS/EntityTypes.hxx"
+#include "OpenDIS/Frame.hxx"
+#include "OpenDIS/CoordinateSystems.hxx"
 
 // OpenDIS headers
 #include <dis6/EntityStatePdu.h>
-
-#include "OpenDIS/EntityTypes.hxx"
 
 FGOpenDIS::FGOpenDIS()
 	: m_incomingMessage(new DIS::IncomingMessage)
@@ -186,42 +187,53 @@ void FGOpenDIS::init_ownship()
 
 bool FGOpenDIS::process_outgoing()
 {
-	const auto latitude_in_radians = m_flightProperties->get_Latitude();
-	const auto longitude_in_radians = m_flightProperties->get_Longitude();
-	const auto altitude_in_feet = m_flightProperties->get_Altitude();
-
-	// Determine ECEF coordinates from Lat/Lon/Alt
-	double ecef[3];
-	sgGeodToCart(latitude_in_radians, longitude_in_radians, altitude_in_feet * SG_FEET_TO_METER, ecef);
+	const auto latitude = Angle::fromRadians(m_flightProperties->get_Latitude());
+	const auto longitude = Angle::fromRadians(m_flightProperties->get_Longitude());
+	const auto altitude = Distance::fromFeet(m_flightProperties->get_Altitude());
 
 	//
 	// Update ownship from flight dynamics
 	//
 
 	// Position
+	{
+		// Determine ECEF coordinates from Lat/Lon/Alt
+		ECEF location(LLA(latitude, longitude, altitude));
+		DIS::Vector3Double locationVector;
 
-	DIS::Vector3Double position;
-	position.setX(ecef[0]);
-	position.setY(ecef[1]);
-	position.setZ(ecef[2]);
+		locationVector.setX(location.GetX().inMeters());
+		locationVector.setY(location.GetY().inMeters());
+		locationVector.setZ(location.GetZ().inMeters());
 
-	m_ownship.setEntityLocation(position);
+		m_ownship.setEntityLocation(locationVector);
+	}
 
 	// Orientation
-	const auto phi = m_flightProperties->get_Phi();
-	const auto psi = m_flightProperties->get_Psi();
-	const auto theta = m_flightProperties->get_Theta();
+	{
+		const auto baseNED = Frame::fromLatLon(latitude, longitude);
+		Frame entityNED = baseNED;
+		auto intermediate = Frame::zero();
 
-	DIS::Orientation orientation;
-	orientation.setPhi(phi);
-	orientation.setPsi(psi);
-	orientation.setTheta(theta);
+		{
+			const auto psi = m_flightProperties->get_Psi();
+			const auto theta = m_flightProperties->get_Theta();
+			const auto phi = m_flightProperties->get_Phi();
 
-	m_ownship.setEntityOrientation(orientation);
-#if 0
-	m_ownship.setEntityLinearVelocity(dynamics.velocity);
-	m_ownship.setTimestamp(frame_stamp);
-#endif
+			DIS::Orientation orientation;
+			orientation.setPsi(psi);
+			orientation.setTheta(theta);
+
+#if 1		// TODO: Fix.  NED to ECEF hack
+			orientation.setPhi(phi + Angle::fromDegrees(180).inRadians());
+#endif			
+
+			entityNED.rotate(baseNED, orientation, &intermediate);
+		}
+
+		const auto orientation = Frame::GetEulerAngles(Frame::fromECEFBase(), intermediate, entityNED);
+
+		m_ownship.setEntityOrientation(orientation);
+	}
 
 	m_ownship.marshal(m_outgoingBuffer);
 	m_outgoingSocket->write(&m_outgoingBuffer[0], m_outgoingBuffer.size());

@@ -20,6 +20,11 @@ public:
         return Frame(SGVec3d(0, 0, 1), SGVec3d(0, 1, 0), SGVec3d(-1, 0, 0));
     }
 
+    static Frame zero()
+    {
+        return Frame(SGVec3d(0, 0, 0), SGVec3d(0, 0, 0), SGVec3d(0, 0, 0));
+    }
+
     // Create a local NED frame at the given latitude/longitude
     static Frame fromLatLon(Angle latitude, Angle longitude);
 
@@ -39,11 +44,12 @@ public:
     }
 
     void rotate(const Angle &a, const SGVec3d &axis);
-    void rotate(const DIS::Orientation &orientation);
+    void rotate(Frame rotationFrame, const DIS::Orientation &orientation, Frame *intermediate = nullptr);
+    void rotate(const DIS::Orientation &orientation, Frame *intermediate = nullptr);
     void rotate(const SGQuatd &q);
 
     static SGQuatd GetRotateTo(const Frame &from, const Frame &to);
-    static DIS::Orientation GetEulerAngles(const Frame &from, const Frame &to);
+    static DIS::Orientation GetEulerAngles(const Frame &from, const Frame &intermediate, const Frame &to);
     
 private:
     Frame(SGVec3d x, SGVec3d y, SGVec3d z)

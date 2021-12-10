@@ -314,23 +314,34 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
             }
         }
 
-        // Calculate orientation
-        // Step 1 - Get the local "base" NED frame (in ECEF space) at the entity's lat/lon.
+        // 
+        // Calculate orientation (Euler angles from the NED frame) so Flight Gear can position it properly.
+        //
 
-        const auto baseECEF = Frame::fromECEFBase();
+        // Step 1 - Create a frame that represents the entity orientation in ECEF space.  It starts equal to the base ECEF frame.
+        auto entityOrientation = Frame::fromECEFBase();
 
-        // Step 2 - Rotate the local NED frame (in ECEF) space around the ECEF axes
-        //          by the Euler angles stored in the incoming DIS orientation.
-        // auto entityNED = baseNED;
-        // entityNED.rotate(entityPDU.getEntityOrientation());
-        auto entityOrientationECEF = baseECEF;
-        entityOrientationECEF.rotate(entityPDU.getEntityOrientation());
+        // Step 2 - Rotate the entity orientation frame around the ECEF axes
+        //          by the Euler angles stored in the incoming DIS PDU.  Also, record
+        //          the intermediate from the rotation so it can be used later when
+        //          determining the Euler angles.
+        Frame intermediate = Frame::zero();
+        entityOrientation.rotate(entityPDU.getEntityOrientation(), &intermediate);
 
-        // Step 3 - Calculate the quarternion that rotates 'baseNED' to 'NED'.
-        // auto q = Frame::GetRotateTo(baseNED, entityNED);
-
+        // Step 3 - Calculate the NED frame located at the entity's location.  This frame will be
+        //          used as the reference frame when calculating the Euler angles relative to the
+        //          entity's frame.
         const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
-        //auto q = Frame::GetRotateTo(baseNED, entityOrientationECEF);
+
+        // Step 4 = Calculate the Euler angles between the base NED and the rotated entity NED.
+        const auto eulers = Frame::GetEulerAngles(baseNED, intermediate, entityOrientation);
+
+        const double heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
+        const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
+      
+#if 1   // TODO/HACK: Fix this 180 degree kludge.  (Due to NED pointing down instead of UP?)     
+        const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
+#endif
 
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
@@ -347,19 +358,13 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
 
         fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
         fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
-        fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet() + 30);
-
-        double heading, pitch, roll;
-        //q.getEulerDeg(heading, pitch, roll);
-        const auto eulers = Frame::GetEulerAngles(baseNED, entityOrientationECEF);
-        heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
-        pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
-        roll    = Angle::fromRadians(eulers.getPhi()).inDegrees();
+        fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
 
         fgSetDouble(propertyPath + "/heading-deg", heading);
         fgSetDouble(propertyPath + "/pitch-deg", pitch);
         fgSetDouble(propertyPath + "/roll-deg", roll);
 
+#ifndef NDEBBUG
         SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
             << std::to_string(entityLLA.GetLatitude().inDegrees()) 
             << "," 
@@ -371,6 +376,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
             << ","
             << std::to_string(roll)
         );
+#endif        
     }
 }
 

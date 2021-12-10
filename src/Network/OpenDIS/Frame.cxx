@@ -19,9 +19,9 @@ namespace
 
         UnitTest()
         {
-            // testNED();
-            // testDISOrientation();
-            // testECEFtoNEDRotations();
+            testNED();
+            testDISOrientation();
+            testECEFtoNEDRotations();
         }
 
         void testNED()
@@ -314,17 +314,25 @@ void Frame::rotate(const Angle &angle, const SGVec3d &axis)
     rotate(c);
 }
 
-void Frame::rotate(const DIS::Orientation &orientation)
+void Frame::rotate(Frame rotationFrame, const DIS::Orientation &orientation, Frame *intermediate)
 {
-    auto ecefFrame = Frame::fromECEFBase();
+    rotate(Angle::fromRadians(orientation.getPsi()), -rotationFrame.GetZAxis());
+    rotationFrame.rotate(Angle::fromRadians(orientation.getPsi()), -rotationFrame.GetZAxis());
 
-    rotate(Angle::fromRadians(orientation.getPsi()), -ecefFrame.GetZAxis());
-    ecefFrame.rotate(Angle::fromRadians(orientation.getPsi()), -ecefFrame.GetZAxis());
+    rotate(Angle::fromRadians(orientation.getTheta()), -rotationFrame.GetYAxis());
+    rotationFrame.rotate(Angle::fromRadians(orientation.getTheta()), -rotationFrame.GetYAxis());
 
-    rotate(Angle::fromRadians(orientation.getTheta()), -ecefFrame.GetYAxis());
-    ecefFrame.rotate(Angle::fromRadians(orientation.getTheta()), -ecefFrame.GetYAxis());
+    if (intermediate)
+    {
+        *intermediate = rotationFrame;
+    }
 
-    rotate(Angle::fromRadians(orientation.getPhi()), -ecefFrame.GetXAxis());
+    rotate(Angle::fromRadians(orientation.getPhi()), -rotationFrame.GetXAxis());
+}
+
+void Frame::rotate(const DIS::Orientation &orientation, Frame *intermediate)
+{
+    rotate(Frame::fromECEFBase(), orientation, intermediate);
 }
 
 void Frame::rotate(const SGQuatd &q)
@@ -332,10 +340,6 @@ void Frame::rotate(const SGQuatd &q)
     _x = q.transform(_x);
     _y = q.transform(_y);
     _z = q.transform(_z);
-
-    _x = normalize(_x);
-    _y = normalize(_y);
-    _z = normalize(_z);
 }
 
 SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
@@ -353,8 +357,9 @@ SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
     return r;
 }
 
-DIS::Orientation Frame::GetEulerAngles(const Frame &from, const Frame &to)
+DIS::Orientation Frame::GetEulerAngles(const Frame &from, const Frame &intermediate, const Frame &to)
 {
+    // (https://apps.dtic.mil/sti/pdfs/ADA484864.pdf - figure 4.20, 4.21, 4.22, 4.23)
     DIS::Orientation o;
     o.setPsi(
         std::atan2(
@@ -368,13 +373,15 @@ DIS::Orientation Frame::GetEulerAngles(const Frame &from, const Frame &to)
     const auto dot_x3_y0 = dot(to.GetXAxis(), from.GetYAxis());
     o.setTheta(
         std::atan2(
-            -dot_x3_z0, std::sqrt(
+            -dot_x3_z0, 
+            std::sqrt(
                 (dot_x3_x0 * dot_x3_x0) + (dot_x3_y0 * dot_x3_y0)
             )
         )
     );
 
-    o.setPhi(0);
-
+    const auto dot_y3_z2 = dot(to.GetYAxis(), intermediate.GetZAxis());
+    const auto dot_y3_y2 = dot(to.GetYAxis(), intermediate.GetYAxis());
+    o.setPhi(std::atan2(dot_y3_z2, dot_y3_y2));
     return o;
 }
