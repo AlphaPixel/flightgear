@@ -318,7 +318,6 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         // Step 1 - Get the local "base" NED frame (in ECEF space) at the entity's lat/lon.
 
         const auto baseECEF = Frame::fromECEFBase();
-        const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
 
         // Step 2 - Rotate the local NED frame (in ECEF) space around the ECEF axes
         //          by the Euler angles stored in the incoming DIS orientation.
@@ -329,7 +328,9 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
 
         // Step 3 - Calculate the quarternion that rotates 'baseNED' to 'NED'.
         // auto q = Frame::GetRotateTo(baseNED, entityNED);
-        auto q = Frame::GetRotateTo(baseNED, entityOrientationECEF);
+
+        const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
+        //auto q = Frame::GetRotateTo(baseNED, entityOrientationECEF);
 
         // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
         // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
@@ -349,11 +350,15 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet() + 30);
 
         double heading, pitch, roll;
-        q.getEulerDeg(heading, pitch, roll);
+        //q.getEulerDeg(heading, pitch, roll);
+        const auto eulers = Frame::GetEulerAngles(baseNED, entityOrientationECEF);
+        heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
+        pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
+        roll    = Angle::fromRadians(eulers.getPhi()).inDegrees();
 
         fgSetDouble(propertyPath + "/heading-deg", heading);
-        //fgSetDouble(propertyPath + "/pitch-deg", pitch);
-        //fgSetDouble(propertyPath + "/roll-deg", roll);
+        fgSetDouble(propertyPath + "/pitch-deg", pitch);
+        fgSetDouble(propertyPath + "/roll-deg", roll);
 
         SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
             << std::to_string(entityLLA.GetLatitude().inDegrees()) 

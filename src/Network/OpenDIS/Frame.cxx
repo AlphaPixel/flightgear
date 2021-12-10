@@ -19,9 +19,9 @@ namespace
 
         UnitTest()
         {
-            testNED();
-            testDISOrientation();
-            testECEFtoNEDRotations();
+            // testNED();
+            // testDISOrientation();
+            // testECEFtoNEDRotations();
         }
 
         void testNED()
@@ -332,6 +332,10 @@ void Frame::rotate(const SGQuatd &q)
     _x = q.transform(_x);
     _y = q.transform(_y);
     _z = q.transform(_z);
+
+    _x = normalize(_x);
+    _y = normalize(_y);
+    _z = normalize(_z);
 }
 
 SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
@@ -347,4 +351,30 @@ SGQuatd Frame::GetRotateTo(const Frame &from, const Frame &to)
     }
 
     return r;
+}
+
+DIS::Orientation Frame::GetEulerAngles(const Frame &from, const Frame &to)
+{
+    DIS::Orientation o;
+    o.setPsi(
+        std::atan2(
+            dot(to.GetXAxis(), from.GetYAxis()), 
+            dot(to.GetXAxis(), from.GetXAxis())
+        )
+    ); 
+
+    const auto dot_x3_z0 = dot(to.GetXAxis(), from.GetZAxis());
+    const auto dot_x3_x0 = dot(to.GetXAxis(), from.GetXAxis());
+    const auto dot_x3_y0 = dot(to.GetXAxis(), from.GetYAxis());
+    o.setTheta(
+        std::atan2(
+            -dot_x3_z0, std::sqrt(
+                (dot_x3_x0 * dot_x3_x0) + (dot_x3_y0 * dot_x3_y0)
+            )
+        )
+    );
+
+    o.setPhi(0);
+
+    return o;
 }

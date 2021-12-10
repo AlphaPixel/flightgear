@@ -43,7 +43,8 @@ public:
     void rotate(const SGQuatd &q);
 
     static SGQuatd GetRotateTo(const Frame &from, const Frame &to);
-
+    static DIS::Orientation GetEulerAngles(const Frame &from, const Frame &to);
+    
 private:
     Frame(SGVec3d x, SGVec3d y, SGVec3d z)
         : _x(x)
