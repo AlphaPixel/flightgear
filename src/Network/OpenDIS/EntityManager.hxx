@@ -22,7 +22,6 @@ struct EntityIDCompare
 
 // EntityManager - class that handles Entity management (create, update, delete)
 class EntityManager : 
-    virtual public SGPropertyChangeListener,
     virtual public EntityStatePDUHandler, 
     virtual public FirePDUHandler, 
     virtual public DetonationPDUHandler
@@ -39,11 +38,6 @@ public:
 #endif    
 
 private:
-    // SGPropertyChangeListener
-    virtual void valueChanged(SGPropertyNode * node) override;
-    virtual void childAdded(SGPropertyNode * parent, SGPropertyNode * child) override;
-    virtual void childRemoved(SGPropertyNode * parent, SGPropertyNode * child) override;
-
     // EntityStatePDUHandler
     virtual void ProcessEntityStatePDU(const DIS::EntityStatePdu& entityPDU) override;
 

@@ -10,9 +10,6 @@
 #include <Model/modelmgr.hxx>
 #include <FDM/flight.hxx>
 #include <FDM/fdm_shell.hxx>
-#include <simgear/scene/model/placement.hxx>
-#include <osg/Math>  // RadiansToDegrees()
-#include <simgear/math/sg_geodesy.hxx>
 
 static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
@@ -52,6 +49,29 @@ EntityManager::EntityManager(DIS::EntityStatePdu ownship)
     {
         m_availableModels_T72.push_back(globalModelIndex + modelIndex);
     }
+
+    auto models = fgGetNode("/models");
+
+    //
+    // Ensure all the models have their property node names set and trigger the node manager
+    // to load the models by creating a "load" node (then immediately removing it)
+    //
+    for (int modelIndex = 0; modelIndex < models->nChildren(); ++modelIndex)
+    {
+        const std::string propertyPath("/models/model" + (modelIndex == 0 ? "" : ("[" + std::to_string(modelIndex) + "]")));
+
+        auto model = models->getChild("model", modelIndex, false);
+
+        model->getNode("latitude-deg-prop", true)->setStringValue(propertyPath + "/latitude-deg");
+        model->getNode("longitude-deg-prop", true)->setStringValue(propertyPath + "/longitude-deg");
+        model->getNode("elevation-ft-prop", true)->setStringValue(propertyPath + "/elevation-ft");
+        model->getNode("heading-deg-prop", true)->setStringValue(propertyPath + "/heading-deg");
+        model->getNode("pitch-deg-prop", true)->setStringValue(propertyPath + "/pitch-deg");
+        model->getNode("roll-deg-prop", true)->setStringValue(propertyPath + "/roll-deg");
+        
+        model->getNode("load", 1);
+        model->removeChildren("load");
+    }
 }
 
 EntityManager::~EntityManager()
@@ -62,26 +82,6 @@ bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
 {
     // TODO: Check exercise ID matches.
     return false;
-}
-
-void EntityManager::valueChanged(SGPropertyNode *node)
-{
-    // TODO: This is an O(n^2) operation when a single value is changed (it updates
-    //       all models).   This is terribly inefficient.   This might warrant
-    //       a change in model-manager to only update a single model.
-    auto mmss = globals->get_subsystem("model-manager");
-    auto mm = dynamic_cast<FGModelMgr*>(mmss);
-
-    const double unused = 0.0;
-    mm->update(unused); //Causes all models up update from the property tree.
-}
-
-void EntityManager::childAdded(SGPropertyNode *parent, SGPropertyNode *child)
-{
-}
-
-void EntityManager::childRemoved(SGPropertyNode *parent, SGPropertyNode *child)
-{
 }
 
 void EntityManager::ProcessEntityStatePDU(const DIS::EntityStatePdu &packet)
@@ -207,9 +207,6 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
     if (entity)
     {
         m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), *entity));
-
-        const std::string propertyPath("/models/model" + (entity->m_modelIndex == 0 ? "" : ("[" + std::to_string(entity->m_modelIndex) + "]")));
-        fgAddChangeListener(this, propertyPath);
     }
 }
 
@@ -221,82 +218,6 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     auto modelInstances = mm->getInstances();
     if (entity.m_modelIndex < modelInstances.size())
     {
-#if 0
-        {
-            SGVec3d N, E, D;
-            CalculateNED(0, 0, N, E, D); // (0, 0, 1), (0, 1, 0), (-1, 0, 0)
-
-            DIS::Orientation o1;
-            o1.setPsi(osg::DegreesToRadians(90.0));
-            o1.setTheta(0);
-            o1.setPhi(0);
-            
-            SGVec3d Nr, Er, Dr;
-            RotateFrame(o1, N, E, D, Nr, Er, Dr);   // (0, 0, 1), (-1, 0, 0), (0, -1, 0) // Psi = +90    
-
-            double psi_radians, theta_radians, phi_radians;
-//            CalculateEulerAnglesBetweenFrames(N, E, D, Nr, Er, Dr, psi_radians, theta_radians, phi_radians);
-// Nope            CalculateEulerAnglesBetweenFrames(E, N, D, Er, Nr, Dr, psi_radians, theta_radians, phi_radians);
-            CalculateEulerAnglesBetweenFrames(E, D, N, Er, Dr, Nr, psi_radians, theta_radians, phi_radians);
-// Nope     CalculateEulerAnglesBetweenFrames(N, D, E, Nr, Dr, Er, psi_radians, theta_radians, phi_radians);
-
-            double psi_degrees = osg::RadiansToDegrees(psi_radians);
-            double theta_degrees = osg::RadiansToDegrees(theta_radians);
-            double phi_degrees = osg::RadiansToDegrees(phi_radians);
-
-// Theta +90    RotateFrame(o1, N, E, D, Nr, Er, Dr);   // (-1, 0, 0), (0, 1, 0), (0, 0, -1)
-// Phi = +90    RotateFrame(o1, N, E, D, Nr, Er, Dr);   // (0, -1, 0), (0, 0, 1), (-1, 0, 0)
-
-            DIS::Vector3Double XYZ;
-            XYZ.setX(-3.93 * 10e6);
-            XYZ.setY(3.48 * 10e6);
-            XYZ.setZ(-3.63 * 10e6);
-
-            // Unit test code for LLA->ECEF
-            double adelaide_latitude_radians = osg::DegreesToRadians(-34.9);
-            double adelaide_longitude_radians = osg::DegreesToRadians(138.5);
-
-            CalculateNED(adelaide_latitude_radians, adelaide_longitude_radians, N, E, D);
-
-            // NED should match figure 4.8
-
-            DIS::Orientation o;
-            o.setPsi(osg::DegreesToRadians(135.0));
-            o.setTheta(osg::DegreesToRadians(20.0));
-            o.setPhi(osg::DegreesToRadians(30.0));
-
-            SGVec3d x3, y3, z3;
-            //CalculateOrientedECEFAxes(o, x3, y3, z3); // Should match figure 4.26 - BUSTED
-            RotateFrame(o, N, E, D, x3, y3, z3);
-
-            // Unit test code for ECEF->LLA conversions
-            //(X,Y,Z) = (−3.93, 3.48, −3.63) ×106 m.  (Adelaide AU)
-
-            DIS::Orientation ptp;
-            ptp.setPsi(osg::DegreesToRadians(-123.0));
-            ptp.setTheta(osg::DegreesToRadians(47.8));
-            ptp.setPhi(osg::DegreesToRadians(-29.7));  
-
-            double latitude_radians, longitude_radians, altitude;
-            ECEFtoLLA(XYZ, latitude_radians, longitude_radians, altitude);
-            double latitude_deg = osg::RadiansToDegrees(latitude_radians);
-            double longitude_deg = osg::RadiansToDegrees(longitude_radians);
-
-            double heading_radians, pitch_radians, roll_radians;
-            ECEFtoHPR(ptp, latitude_radians, longitude_radians, heading_radians, pitch_radians, roll_radians);
-            double heading_deg = osg::RadiansToDegrees(heading_radians);
-            double pitch_deg = osg::RadiansToDegrees(pitch_radians);
-            double roll_deg = osg::RadiansToDegrees(roll_radians);
-
-            heading_deg = 0.0;
-        }
-#endif
-
-
-
-        // Set properties on entity model
-//        auto modelInstance = modelInstances[entity.m_modelIndex];
-
         // Get the lat/lon/altitude from the PDU
         ECEF entityECEF(entityPDU.getEntityLocation());
         LLA entityLLA(entityECEF);
@@ -343,16 +264,6 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
 #endif
 
-        // NOTE/HACK: we write to both the model and the property system.  This must be done because sometimes (UFO mode), based on the
-        // FDM in use, the property system updates won't make it down into the model and other times (non-UFO mode) they will
-        // and will overwrite what's written in the model.
-        // auto model = modelInstance->model;
-        // model->setPosition(position);
-
-        // auto q = SGQuatd::fromEulerRad(psi, theta, phi);
-        // model->setOrientation(q);
-        // model->update();
-
         // Set the values in the property system.
         const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
 
@@ -365,7 +276,9 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
         fgSetDouble(propertyPath + "/roll-deg", roll);
 
 #ifndef NDEBBUG
-        SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
+        SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
+            << std::to_string(entityPDU.getEntityID().getEntity())
+            << ","
             << std::to_string(entityLLA.GetLatitude().inDegrees()) 
             << "," 
             << std::to_string(entityLLA.GetLongitude().inDegrees()) 
@@ -473,29 +386,13 @@ void EntityManager::PerformExtra()
     for (size_t modelIndex = 0; modelIndex < modelInstances.size(); ++modelIndex)
     {
         const std::string propertyPath("/models/model" + (modelIndex == 0 ? "" : ("[" + std::to_string(modelIndex) + "]")));
-        auto specificPropertyPath = propertyPath + "/surface-positions/turret-pos-deg";
+        auto specificPropertyPath = propertyPath + "/heading-deg";
         if (fgHasNode(specificPropertyPath))
         {
             auto value = fgGetDouble(specificPropertyPath);
             value += 5;
             fgSetDouble(specificPropertyPath, value);
         }
-#if 0
-        if (value != 45)
-        {
-            fgSetDouble(specificPropertyPath, 45);
-        }
-
-        specificPropertyPath = propertyPath + "/pitch-deg";
-        value = fgGetDouble(specificPropertyPath);
-        value += 1;
-        fgSetDouble(specificPropertyPath, value);
-
-        specificPropertyPath = propertyPath + "/roll-deg";
-        value = fgGetDouble(specificPropertyPath);
-        value += 2;
-        fgSetDouble(specificPropertyPath, value);
-#endif        
     }
 #endif    
 }
