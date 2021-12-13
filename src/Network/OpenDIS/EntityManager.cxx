@@ -397,3 +397,102 @@ void EntityManager::PerformExtra()
 #endif    
 }
 #endif // !NDEBUG
+
+// ------------------------------------------------------------------------------------------------
+// Source for a standalone example showing the model properly transform both the "canon" and the
+// "turret" component to which it is attached. Heading values will rotate the "turrent", and
+// pitching will move the "canon" up and down.
+// ------------------------------------------------------------------------------------------------
+#if 0
+
+#include <osg/io_utils>
+#include <osgDB/ReadFile>
+#include <osgSim/DOFTransform>
+#include <osgViewer/Viewer>
+
+namespace osg {
+
+template<typename T, typename std::enable_if_t<std::is_base_of_v<Referenced, T>, bool> = false>
+inline constexpr auto make_ref(T* t) {
+	return ref_ptr<T>(t);
+}
+
+}
+
+class TankVisitor: public osg::NodeVisitor {
+public:
+	TankVisitor(const std::string& name):
+	osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+	_name(name) {}
+
+	virtual void apply(osg::Transform& t) {
+		if(t.getName() == _name) _transform = &t;
+
+		traverse(t);
+	}
+
+	osg::Transform* getTransform() { return _transform.get(); }
+
+protected:
+	std::string _name;
+	osg::ref_ptr<osg::Transform> _transform;
+};
+
+class KeyboardHandler: public osgGA::GUIEventHandler {
+public:
+	KeyboardHandler(osg::Transform* t):
+	_transform(t) {}
+
+	virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
+		if(
+			!_transform ||
+			ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN ||
+			ea.getKey() != osgGA::GUIEventAdapter::KeySymbol::KEY_F7
+		) return false;
+
+		auto m = dynamic_cast<osgSim::DOFTransform*>(_transform.get());
+
+		if(m) {
+			auto hpr = m->getCurrentHPR();
+
+			OSG_NOTICE << "Turning gun; current HPR: " << hpr << std::endl;
+
+			m->setCurrentHPR(hpr + osg::Vec3(0.1, 0.0, 0.0));
+
+			OSG_NOTICE << "Turning gun; new HPR: " << m->getCurrentHPR() << std::endl;
+		}
+
+		return true;
+	}
+
+protected:
+	osg::ref_ptr<osg::Transform> _transform;
+};
+
+int main(int argc, char** argv) {
+	if(argc <= 1) return 1;
+
+	auto t = osg::make_ref(osgDB::readNodeFile(argv[1]));
+
+	if(!t) {
+		OSG_NOTICE << "Couldn't load..." << std::endl;
+
+		return 2;
+	}
+
+	auto tv = TankVisitor("gun");
+
+	t->accept(tv);
+
+	auto kb = new KeyboardHandler(tv.getTransform());
+	auto viewer = osgViewer::Viewer();
+
+	viewer.addEventHandler(kb);
+	viewer.setSceneData(t);
+
+	return viewer.run();
+
+	return 0;
+}
+
+#endif

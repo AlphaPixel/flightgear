@@ -50,7 +50,7 @@ LAT_LONG = {
 		(31.14162115, -97.71160065)
 	],
 
-	"Models/Military/M1/m1.xml": [
+	"Models/Military/M1/M1.osg": [
 		(31.14046115, -97.71286535),
 		(31.14054286, -97.71255952),
 		(31.14061951, -97.71225284),
@@ -67,7 +67,7 @@ LAT_LONG = {
 		(31.13912079, -97.7121332)
 	],
 
-	"Models/Military/T72/t72.xml": [
+	"Models/Military/T72/T72.osg": [
 		(31.13917925, -97.71188824),
 		(31.13924376, -97.71164093),
 		(31.13930726, -97.71140187),
@@ -101,7 +101,6 @@ with tag("PropertyList"):
 			for lat, long in vals:
 				with tag("model", n=i):
 					gen_model(
-						legend="",
 						path=path,
 						latitude_deg=lat,
 						longitude_deg=long,
