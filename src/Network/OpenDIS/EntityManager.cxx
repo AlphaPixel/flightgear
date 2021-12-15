@@ -397,3 +397,128 @@ void EntityManager::PerformExtra()
 #endif    
 }
 #endif // !NDEBUG
+
+// ------------------------------------------------------------------------------------------------
+// Source for a standalone example showing the model properly transform both the "canon" and the
+// "turret" component to which it is attached. Heading values will rotate the "turrent", and
+// pitching will move the "canon" up and down.
+// ------------------------------------------------------------------------------------------------
+#if 0
+#include <osg/io_utils>
+#include <osg/MatrixTransform>
+#include <osgDB/ReadFile>
+#include <osgSim/DOFTransform>
+#include <osgParticle/ExplosionEffect>
+#include <osgParticle/ExplosionDebrisEffect>
+#include <osgParticle/SmokeEffect>
+#include <osgParticle/SmokeTrailEffect>
+#include <osgParticle/FireEffect>
+#include <osgViewer/Viewer>
+
+class Tank {
+public:
+	Tank(osg::Transform* turret, osg::Transform* gun):
+	_turret(dynamic_cast<osgSim::DOFTransform*>(turret)),
+	_gun(dynamic_cast<osgSim::DOFTransform*>(gun)) {}
+
+	osg::Vec3 getHPR() const {
+		return _turret->getCurrentHPR();
+
+		/* return osg::Vec3(
+			_turret->getCurrentHPR().x(),
+			_gun->getCurrentHPR().y(),
+			0.0
+		); */
+	}
+
+	void setHPR(const osg::Vec3& hpr) {
+		// _turret->setCurrentHPR(osg::Vec3(hpr.x(), 0.0, 0.0));
+		// _gun->setCurrentHPR(osg::Vec3(0.0, hpr.y(), 0.0));
+
+		// _turret->setCurrentHPR(osg::Vec3(0.0, hpr.x(), 0.0));
+
+		_turret->setCurrentHPR(hpr);
+		_gun->setCurrentHPR(hpr);
+	}
+
+	osgSim::DOFTransform* getTurret() { return _turret.get(); }
+	osgSim::DOFTransform* getGun() { return _gun.get(); }
+
+protected:
+	osg::ref_ptr<osgSim::DOFTransform> _turret;
+	osg::ref_ptr<osgSim::DOFTransform> _gun;
+};
+
+class TankVisitor: public osg::NodeVisitor {
+public:
+	TankVisitor(const std::string& turret, const std::string& gun):
+	osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+	_nameTurret(turret),
+	_nameGun(gun) {}
+
+	virtual void apply(osg::Transform& t) {
+		if(t.getName() == _nameTurret) _turret = &t;
+
+		else if(t.getName() == _nameGun) _gun = &t;
+
+		traverse(t);
+	}
+
+	Tank getTank() {
+		return Tank(_turret.get(), _gun.get());
+	}
+
+protected:
+	std::string _nameTurret;
+	std::string _nameGun;
+
+	osg::ref_ptr<osg::Transform> _turret;
+	osg::ref_ptr<osg::Transform> _gun;
+};
+
+class KeyboardHandler: public osgGA::GUIEventHandler {
+public:
+	KeyboardHandler(Tank t):
+	_tank(t) {}
+
+	virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
+		if(
+			ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN ||
+			ea.getKey() != osgGA::GUIEventAdapter::KeySymbol::KEY_F7
+		) return false;
+
+		// M1 "heading" is Z, "pitch" is -X.
+		// _tank.setHPR(_tank.getHPR() + osg::Vec3(0.0, 0.0, 0.1));
+		// _tank.setHPR(_tank.getHPR() + osg::Vec3(-0.1, 0.0, 0.0));
+
+		return true;
+	}
+
+protected:
+	Tank _tank;
+};
+
+int main(int argc, char** argv) {
+	if(argc <= 1) return 1;
+
+	auto t = osg::ref_ptr<osg::Node>(osgDB::readNodeFile(argv[1]));
+
+	if(!t) {
+		OSG_NOTICE << "Couldn't load..." << std::endl;
+
+		return 2;
+	}
+
+	auto tv = TankVisitor("turret", "gun");
+
+	t->accept(tv);
+
+	auto kb = new KeyboardHandler(tv.getTank());
+	auto viewer = osgViewer::Viewer();
+
+	viewer.addEventHandler(kb);
+	viewer.setSceneData(t);
+
+	return viewer.run();
+}
+#endif
