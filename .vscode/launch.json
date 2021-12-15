@@ -2,6 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Debug FGFS",
             "type": "cppdbg",
             "request": "launch",
@@ -10,18 +17,20 @@
                 "--dis=socket,in,10,255.255.255.255,3000,broadcast",
                 "--site=22317",
                 "--application=44635",
-                "--ownship_id=4444",
+                "--ownship_id=444",
                 "--lat=31.13912981822674",
                 "--lon=-97.71213774258472",
                 "--heading=270",
                 "--aircraft=uh60",
                 "--timeofday=morning",
-                "--config=${workspaceFolder}/models.xml",
                 "--multiplay=out,10,127.0.0.1,5000",
                 "--multiplay=in,10,127.0.0.1,5001",
-                "--data=${workspaceFolder}/ap",
+                "--ai-scenario=alphapixel_tanks.xml",
                 "--callsign=Debugger"
             ],
+            "new_lat": "--lat=31.219901350014027",
+            "new_lon": "--lon=-97.82269212426101",
+            "new_alt": "550.69700050726533",
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

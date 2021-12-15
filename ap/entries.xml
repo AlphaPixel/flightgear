@@ -1,0 +1,284 @@
+<?xml version="1.0"?>
+<PropertyList>
+  <entries>
+    <entry>
+      <name>model 0</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14122538</latitude>
+      <longitude>-97.71313297</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 1</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14130327</latitude>
+      <longitude>-97.71282675</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 2</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14138327</latitude>
+      <longitude>-97.71251562</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 3</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14146432</latitude>
+      <longitude>-97.71221309</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 4</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14154536</latitude>
+      <longitude>-97.71190318</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 5</name>
+      <model>Models/Aircraft/H-60.xml</model>
+      <type>aircraft</type>
+      <latitude>31.14162115</latitude>
+      <longitude>-97.71160065</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 6</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14046115</latitude>
+      <longitude>-97.71286535</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 7</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14054286</latitude>
+      <longitude>-97.71255952</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 8</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14061951</latitude>
+      <longitude>-97.71225284</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 9</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14069688</latitude>
+      <longitude>-97.71194532</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 10</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14077859</latitude>
+      <longitude>-97.71163779</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 11</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14085451</latitude>
+      <longitude>-97.71133027</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 12</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13985639</latitude>
+      <longitude>-97.71265771</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 13</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13991992</latitude>
+      <longitude>-97.71241122</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 14</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13998202</latitude>
+      <longitude>-97.71216593</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 15</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14004573</latitude>
+      <longitude>-97.71192118</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 16</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14010886</latitude>
+      <longitude>-97.71167643</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 17</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.14017085</latitude>
+      <longitude>-97.71143033</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 18</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.1390532</latitude>
+      <longitude>-97.71237564</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 19</name>
+      <model>Models/Military/M1/m1.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13912079</latitude>
+      <longitude>-97.7121332</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 20</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13917925</latitude>
+      <longitude>-97.71188824</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 21</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13924376</latitude>
+      <longitude>-97.71164093</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 22</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13930726</latitude>
+      <longitude>-97.71140187</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 23</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13937177</latitude>
+      <longitude>-97.71115692</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 24</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13826038</latitude>
+      <longitude>-97.71210409</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 25</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13833092</latitude>
+      <longitude>-97.7118597</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 26</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13839173</latitude>
+      <longitude>-97.71161247</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 27</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13845132</latitude>
+      <longitude>-97.71136951</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 28</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13852307</latitude>
+      <longitude>-97.71112512</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 29</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13858631</latitude>
+      <longitude>-97.71088642</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+    <entry>
+      <name>model 30</name>
+      <model>Models/Military/T72/t72.xml</model>
+      <type>groundvehicle</type>
+      <latitude>31.13865684</latitude>
+      <longitude>-97.71064487</longitude>
+      <altitude>900</altitude>
+      <heading>0</heading>
+    </entry>
+  </entries>
+</PropertyList>

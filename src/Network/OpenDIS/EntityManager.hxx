@@ -68,11 +68,11 @@ private:
     struct Entity
     {
         DIS::EntityStatePdu m_mostRecentPdu;
-        size_t m_modelIndex;
+        std::string m_modelPath;
 
-        Entity(const DIS::EntityStatePdu &mostRecentPdu, size_t modelIndex)
+        Entity(const DIS::EntityStatePdu &mostRecentPdu, const std::string modelPath)
             : m_mostRecentPdu(mostRecentPdu)
-            , m_modelIndex(modelIndex)
+            , m_modelPath(modelPath)
         {
         }
     };
@@ -80,7 +80,7 @@ private:
     void AddEntityToScene(const DIS::EntityStatePdu& entityPDU);
     void UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU);
     void RemoveExpiredEntities();
-    std::unique_ptr<Entity> CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex);
+    std::unique_ptr<Entity> CreateEntity(const DIS::EntityStatePdu& entityPDU, const std::string& modelPath);
 
     // Specific entities to create
     std::unique_ptr<Entity> CreateAH64(const DIS::EntityStatePdu& entityPDU);
@@ -89,10 +89,10 @@ private:
     std::unique_ptr<Entity> CreateUH60(const DIS::EntityStatePdu& entityPDU);
 
     // Model allocation arrays
-    std::vector<size_t> m_availableModels_AH64;
-    std::vector<size_t> m_availableModels_M1;
-    std::vector<size_t> m_availableModels_T72;
-    std::vector<size_t> m_availableModels_UH60;
+    std::vector<std::string> m_availableModels_AH64;
+    std::vector<std::string> m_availableModels_M1;
+    std::vector<std::string> m_availableModels_T72;
+    std::vector<std::string> m_availableModels_UH60;
 
     // EntityID -> Entity map
     std::map<DIS::EntityID, Entity, EntityIDCompare> m_entityMap;

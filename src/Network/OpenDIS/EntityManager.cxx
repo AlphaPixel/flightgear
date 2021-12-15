@@ -32,24 +32,27 @@ EntityManager::EntityManager(DIS::EntityStatePdu ownship)
     : m_ownship(ownship)
 {
     // Set up model availibility arrays
-    size_t globalModelIndex = 0;
     for (size_t modelIndex = 0; modelIndex < modelCount_UH60; ++modelIndex) 
     {
-        m_availableModels_UH60.push_back(globalModelIndex + modelIndex);
+        const auto path = std::string("/ai/models/aircraft" + (modelIndex == 0 ? "" : std::string(" [") + std::to_string(modelIndex) + std::string("]")));
+        m_availableModels_UH60.push_back(path);
     }
-    globalModelIndex += modelCount_UH60;
 
+    size_t vehicleModelIndex = 0;
     for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
     {
-        m_availableModels_M1.push_back(globalModelIndex + modelIndex);
+        const auto path = std::string("/ai/models/groundvehicle" + (modelIndex == 0 ? "" : std::string(" [") + std::to_string(vehicleModelIndex) + std::string("]")));
+        m_availableModels_M1.push_back(path);
     }
-    globalModelIndex += modelCount_M1;
+    vehicleModelIndex += modelCount_M1;
 
     for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
     {
-        m_availableModels_T72.push_back(globalModelIndex + modelIndex);
+        const auto path = std::string("/ai/models/groundvehicle" + (modelIndex == 0 ? "" : std::string(" [") + std::to_string(vehicleModelIndex) + std::string("]")));
+        m_availableModels_T72.push_back(path);
     }
 
+#if 0
     auto models = fgGetNode("/models");
 
     //
@@ -72,6 +75,7 @@ EntityManager::EntityManager(DIS::EntityStatePdu ownship)
         model->getNode("load", 1);
         model->removeChildren("load");
     }
+#endif    
 }
 
 EntityManager::~EntityManager()
@@ -212,94 +216,87 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
 
 void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
 {
-    auto mmss = globals->get_subsystem("model-manager");
-    auto mm = dynamic_cast<FGModelMgr*>(mmss);
+    // Get the lat/lon/altitude from the PDU
+    ECEF entityECEF(entityPDU.getEntityLocation());
+    LLA entityLLA(entityECEF);
 
-    auto modelInstances = mm->getInstances();
-    if (entity.m_modelIndex < modelInstances.size())
+    // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
     {
-        // Get the lat/lon/altitude from the PDU
-        ECEF entityECEF(entityPDU.getEntityLocation());
-        LLA entityLLA(entityECEF);
-
-        // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
+        auto position = SGGeod::fromDegFt(
+            entityLLA.GetLongitude().inDegrees(), 
+            entityLLA.GetLatitude().inDegrees(),
+            entityLLA.GetAltitude().inFeet());
+        auto groundLevelInFeet = GetGroundLevelInFeet(position);
+        if (entityLLA.GetAltitude().inFeet() < groundLevelInFeet)
         {
-            auto position = SGGeod::fromDegFt(
-                entityLLA.GetLongitude().inDegrees(), 
-                entityLLA.GetLatitude().inDegrees(),
-                entityLLA.GetAltitude().inFeet());
-            auto groundLevelInFeet = GetGroundLevelInFeet(position);
-            if (entityLLA.GetAltitude().inFeet() < groundLevelInFeet)
-            {
-                entityLLA.SetAltitude(Distance::fromFeet(groundLevelInFeet));
-            }
+            entityLLA.SetAltitude(Distance::fromFeet(groundLevelInFeet));
         }
+    }
 
-        // 
-        // Calculate orientation (Euler angles from the NED frame) so Flight Gear can position it properly.
-        //
+    // 
+    // Calculate orientation (Euler angles from the NED frame) so Flight Gear can position it properly.
+    //
 
-        // Step 1 - Create a frame that represents the entity orientation in ECEF space.  It starts equal to the base ECEF frame.
-        auto entityOrientation = Frame::fromECEFBase();
+    // Step 1 - Create a frame that represents the entity orientation in ECEF space.  It starts equal to the base ECEF frame.
+    auto entityOrientation = Frame::fromECEFBase();
 
-        // Step 2 - Rotate the entity orientation frame around the ECEF axes
-        //          by the Euler angles stored in the incoming DIS PDU.  Also, record
-        //          the intermediate from the rotation so it can be used later when
-        //          determining the Euler angles.
-        Frame intermediate = Frame::zero();
-        entityOrientation.rotate(entityPDU.getEntityOrientation(), &intermediate);
+    // Step 2 - Rotate the entity orientation frame around the ECEF axes
+    //          by the Euler angles stored in the incoming DIS PDU.  Also, record
+    //          the intermediate from the rotation so it can be used later when
+    //          determining the Euler angles.
+    Frame intermediate = Frame::zero();
+    entityOrientation.rotate(entityPDU.getEntityOrientation(), &intermediate);
 
-        // Step 3 - Calculate the NED frame located at the entity's location.  This frame will be
-        //          used as the reference frame when calculating the Euler angles relative to the
-        //          entity's frame.
-        const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
+    // Step 3 - Calculate the NED frame located at the entity's location.  This frame will be
+    //          used as the reference frame when calculating the Euler angles relative to the
+    //          entity's frame.
+    const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
 
-        // Step 4 = Calculate the Euler angles between the base NED and the rotated entity NED.
-        const auto eulers = Frame::GetEulerAngles(baseNED, intermediate, entityOrientation);
+    // Step 4 = Calculate the Euler angles between the base NED and the rotated entity NED.
+    const auto eulers = Frame::GetEulerAngles(baseNED, intermediate, entityOrientation);
 
-        const double heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
-        const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
-      
+    const double heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
+    const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
+    
 #if 1   // TODO/HACK: Fix this 180 degree kludge.  (Due to NED pointing down instead of UP?)     
-        const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
+    const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
 #endif
 
-        // Set the values in the property system.
-        const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
+    // Set the values in the property system.
+    const std::string propertyPath(entity.m_modelPath);
 
-        fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
-        fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
-        fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
+    fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
+    fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
+    fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
 
-        fgSetDouble(propertyPath + "/heading-deg", heading);
-        fgSetDouble(propertyPath + "/pitch-deg", pitch);
-        fgSetDouble(propertyPath + "/roll-deg", roll);
+    fgSetDouble(propertyPath + "/heading-deg", heading);
+    fgSetDouble(propertyPath + "/pitch-deg", pitch);
+    fgSetDouble(propertyPath + "/roll-deg", roll);
 
 #ifndef NDEBBUG
-        SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
-            << std::to_string(entityPDU.getEntityID().getEntity())
-            << ","
-            << std::to_string(entityLLA.GetLatitude().inDegrees()) 
-            << "," 
-            << std::to_string(entityLLA.GetLongitude().inDegrees()) 
-            << ",     " 
-            << std::to_string(heading)
-            << ","
-            << std::to_string(pitch)
-            << ","
-            << std::to_string(roll)
-        );
+    SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
+        << std::to_string(entityPDU.getEntityID().getEntity())
+        << ","
+        << std::to_string(entityLLA.GetLatitude().inDegrees()) 
+        << "," 
+        << std::to_string(entityLLA.GetLongitude().inDegrees()) 
+        << ",     " 
+        << std::to_string(heading)
+        << ","
+        << std::to_string(pitch)
+        << ","
+        << std::to_string(roll)
+    );
 #endif        
-    }
 }
 
 void EntityManager::RemoveExpiredEntities()
 {
 }
 
-std::unique_ptr<EntityManager::Entity> EntityManager::CreateEntity(const DIS::EntityStatePdu& entityPDU, size_t modelIndex)
+std::unique_ptr<EntityManager::Entity> EntityManager::CreateEntity(const DIS::EntityStatePdu& entityPDU, const std::string& modelPath)
 {
-    return std::unique_ptr<Entity>(new Entity(entityPDU, modelIndex));
+    return std::unique_ptr<Entity>(new Entity(entityPDU, modelPath));
 }
 
 std::unique_ptr<EntityManager::Entity> EntityManager::CreateT72(const DIS::EntityStatePdu& entityPDU)
@@ -377,23 +374,19 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 #ifndef NDEBUG
 void EntityManager::PerformExtra()
 {
-#if 0 // TODO: Simple test logic, remove before shipping
-    auto mmss = globals->get_subsystem("model-manager");
-    auto mm = dynamic_cast<FGModelMgr*>(mmss);
-
-    auto modelInstances = mm->getInstances();
-
-    for (size_t modelIndex = 0; modelIndex < modelInstances.size(); ++modelIndex)
+#if 1 // TODO: Simple test logic, remove before shipping
+    auto aircraftNode = fgGetNode("/ai/models/aircraft");
+    if (aircraftNode)
     {
-        const std::string propertyPath("/models/model" + (modelIndex == 0 ? "" : ("[" + std::to_string(modelIndex) + "]")));
-        auto specificPropertyPath = propertyPath + "/heading-deg";
-        if (fgHasNode(specificPropertyPath))
-        {
-            auto value = fgGetDouble(specificPropertyPath);
-            value += 5;
-            fgSetDouble(specificPropertyPath, value);
-        }
+        aircraftNode = nullptr;
     }
+    // for (auto i : m_entityMap)
+    // {
+    //     auto entity = i.second;
+    //     const auto path = entity.m_modelPath + "/surface-positions/turret-pos-deg";
+    //     auto az = fgGetDouble(path) + 5;
+    //     fgSetDouble(path, az);
+    // }
 #endif    
 }
 #endif // !NDEBUG

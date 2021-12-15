@@ -41,7 +41,7 @@ protected:
     };
     
     AircraftDirVistorBase() :
-        _maxDepth(2)
+        _maxDepth(3)
     {
         
     }

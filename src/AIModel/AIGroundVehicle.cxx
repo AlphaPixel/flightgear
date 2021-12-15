@@ -451,6 +451,12 @@ void FGAIGroundVehicle::setTowSpeed(){
 
 void FGAIGroundVehicle::RunGroundVehicle(double dt){
 
+    if (prev == nullptr || next == nullptr || curr == nullptr)
+    {
+        // No waypoints.
+        return;
+    }
+
     _dt_count += dt;
 
     ///////////////////////////////////////////////////////////////////////////
