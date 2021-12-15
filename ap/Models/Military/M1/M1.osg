@@ -7966,11 +7966,32 @@ Group {
       }
     }
   }
-  Group {
-    DataVariance STATIC
-    name "tourelle"
+  osgSim::DOFTransform {
+    name "turret"
     nodeMask 0xffffffff
     cullingActive TRUE
+    referenceFrame RELATIVE
+    PutMatrix {
+      1 0 0 0
+      0 1 0 0
+      0 0 1 0
+      0 0 0 1
+      }
+    minHPR             0 0 0
+    maxHPR             6.28319 0 0
+    incrementHPR       0.0174533 0 0
+    currentHPR         0 0 0
+    minTranslate       0 0 0
+    maxTranslate       0 0 0
+    incrementTranslate 0 0 0
+    currentTranslate   0 0 0
+    minScale           0 0 0
+    maxScale           1 1 1
+    incrementScale     0 0 0
+    currentScale       1 1 1
+    multOrder          PRH
+    limitationFlags    0x1194
+    animationOn        FALSE
     num_children 1
     Geode {
       DataVariance STATIC
