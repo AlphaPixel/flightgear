@@ -404,75 +404,104 @@ void EntityManager::PerformExtra()
 // pitching will move the "canon" up and down.
 // ------------------------------------------------------------------------------------------------
 #if 0
-
 #include <osg/io_utils>
+#include <osg/MatrixTransform>
 #include <osgDB/ReadFile>
 #include <osgSim/DOFTransform>
+#include <osgParticle/ExplosionEffect>
+#include <osgParticle/ExplosionDebrisEffect>
+#include <osgParticle/SmokeEffect>
+#include <osgParticle/SmokeTrailEffect>
+#include <osgParticle/FireEffect>
 #include <osgViewer/Viewer>
 
-namespace osg {
+class Tank {
+public:
+	Tank(osg::Transform* turret, osg::Transform* gun):
+	_turret(dynamic_cast<osgSim::DOFTransform*>(turret)),
+	_gun(dynamic_cast<osgSim::DOFTransform*>(gun)) {}
 
-template<typename T, typename std::enable_if_t<std::is_base_of_v<Referenced, T>, bool> = false>
-inline constexpr auto make_ref(T* t) {
-	return ref_ptr<T>(t);
-}
+	osg::Vec3 getHPR() const {
+		return _turret->getCurrentHPR();
 
-}
+		/* return osg::Vec3(
+			_turret->getCurrentHPR().x(),
+			_gun->getCurrentHPR().y(),
+			0.0
+		); */
+	}
+
+	void setHPR(const osg::Vec3& hpr) {
+		// _turret->setCurrentHPR(osg::Vec3(hpr.x(), 0.0, 0.0));
+		// _gun->setCurrentHPR(osg::Vec3(0.0, hpr.y(), 0.0));
+
+		// _turret->setCurrentHPR(osg::Vec3(0.0, hpr.x(), 0.0));
+
+		_turret->setCurrentHPR(hpr);
+		_gun->setCurrentHPR(hpr);
+	}
+
+	osgSim::DOFTransform* getTurret() { return _turret.get(); }
+	osgSim::DOFTransform* getGun() { return _gun.get(); }
+
+protected:
+	osg::ref_ptr<osgSim::DOFTransform> _turret;
+	osg::ref_ptr<osgSim::DOFTransform> _gun;
+};
 
 class TankVisitor: public osg::NodeVisitor {
 public:
-	TankVisitor(const std::string& name):
+	TankVisitor(const std::string& turret, const std::string& gun):
 	osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
-	_name(name) {}
+	_nameTurret(turret),
+	_nameGun(gun) {}
 
 	virtual void apply(osg::Transform& t) {
-		if(t.getName() == _name) _transform = &t;
+		if(t.getName() == _nameTurret) _turret = &t;
+
+		else if(t.getName() == _nameGun) _gun = &t;
 
 		traverse(t);
 	}
 
-	osg::Transform* getTransform() { return _transform.get(); }
+	Tank getTank() {
+		return Tank(_turret.get(), _gun.get());
+	}
 
 protected:
-	std::string _name;
-	osg::ref_ptr<osg::Transform> _transform;
+	std::string _nameTurret;
+	std::string _nameGun;
+
+	osg::ref_ptr<osg::Transform> _turret;
+	osg::ref_ptr<osg::Transform> _gun;
 };
 
 class KeyboardHandler: public osgGA::GUIEventHandler {
 public:
-	KeyboardHandler(osg::Transform* t):
-	_transform(t) {}
+	KeyboardHandler(Tank t):
+	_tank(t) {}
 
 	virtual bool handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
 		if(
-			!_transform ||
 			ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN ||
 			ea.getKey() != osgGA::GUIEventAdapter::KeySymbol::KEY_F7
 		) return false;
 
-		auto m = dynamic_cast<osgSim::DOFTransform*>(_transform.get());
-
-		if(m) {
-			auto hpr = m->getCurrentHPR();
-
-			OSG_NOTICE << "Turning gun; current HPR: " << hpr << std::endl;
-
-			m->setCurrentHPR(hpr + osg::Vec3(0.1, 0.0, 0.0));
-
-			OSG_NOTICE << "Turning gun; new HPR: " << m->getCurrentHPR() << std::endl;
-		}
+		// M1 "heading" is Z, "pitch" is -X.
+		// _tank.setHPR(_tank.getHPR() + osg::Vec3(0.0, 0.0, 0.1));
+		// _tank.setHPR(_tank.getHPR() + osg::Vec3(-0.1, 0.0, 0.0));
 
 		return true;
 	}
 
 protected:
-	osg::ref_ptr<osg::Transform> _transform;
+	Tank _tank;
 };
 
 int main(int argc, char** argv) {
 	if(argc <= 1) return 1;
 
-	auto t = osg::make_ref(osgDB::readNodeFile(argv[1]));
+	auto t = osg::ref_ptr<osg::Node>(osgDB::readNodeFile(argv[1]));
 
 	if(!t) {
 		OSG_NOTICE << "Couldn't load..." << std::endl;
@@ -480,19 +509,16 @@ int main(int argc, char** argv) {
 		return 2;
 	}
 
-	auto tv = TankVisitor("gun");
+	auto tv = TankVisitor("turret", "gun");
 
 	t->accept(tv);
 
-	auto kb = new KeyboardHandler(tv.getTransform());
+	auto kb = new KeyboardHandler(tv.getTank());
 	auto viewer = osgViewer::Viewer();
 
 	viewer.addEventHandler(kb);
 	viewer.setSceneData(t);
 
 	return viewer.run();
-
-	return 0;
 }
-
 #endif
