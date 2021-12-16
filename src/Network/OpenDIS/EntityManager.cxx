@@ -224,7 +224,9 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
 
             osg::ref_ptr<osgSim::DOFTransform> turret, canon;
 
-            entity->m_tank = tv.getTank();
+            entity->m_tank = tv.getTank(
+                T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
+            );
         }
         m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
     }

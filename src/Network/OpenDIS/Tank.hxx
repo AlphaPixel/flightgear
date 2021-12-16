@@ -14,26 +14,21 @@
 #include <osgParticle/FireEffect>
 #include <osgViewer/Viewer>
 
-class Tank 
+class Tank
 {
 public:
-    Tank(osg::Transform* turret, osg::Transform* gun):
+    enum class Type
+    {
+        T72,
+        M1
+    };
+
+    Tank(Type type, osg::Transform* turret, osg::Transform* gun):
+        _type(type),
         _turret(dynamic_cast<osgSim::DOFTransform*>(turret)),
-        _gun(dynamic_cast<osgSim::DOFTransform*>(gun)) 
+        _gun(dynamic_cast<osgSim::DOFTransform*>(gun))
     {
-
     }
-
-	osg::Vec3 getHPR() const 
-    {
-		return _turret->getCurrentHPR();
-	}
-
-	void setHPR(const osg::Vec3& hpr) 
-    {
-		_turret->setCurrentHPR(hpr);
-		_gun->setCurrentHPR(hpr);
-	}
 
     void beginArticulation()
     {
@@ -46,8 +41,21 @@ public:
         // Put azimuth and elevation into HPR
         // DIS spec says order is: azimuth -> elevation -> rotation (which we're not handling)
         // Those are standard Euler angle ordering.
-        
-        // TODO: Jeremy
+
+        // T72 "heading" is X, "pitch" is Y.
+        if (_type == Type::T72)
+        {
+            _turret->setCurrentHPR(osg::Vec3(_azimuth, 0.0, 0.0));
+            _gun->setCurrentHPR(osg::Vec3(0.0, _elevation, 0.0));
+        }
+
+        // M1 "heading" is Z, "pitch" is -X.
+        // Both _turret and _gun must be set for heading/azimuth; pitch/elevation is only
+        // applied to the _gun.
+        else
+        {
+            // TODO: Test and confirm that M1 behavior above matches FG.
+        }
     }
 
     void setAzimuth(double azimuth)
@@ -62,57 +70,60 @@ public:
         _elevation = elevation;
     }
 
-	osgSim::DOFTransform* getTurret() 
-    { 
-        return _turret.get(); 
+    const osgSim::DOFTransform* getTurret() const
+    {
+        return _turret.get();
     }
 
-	osgSim::DOFTransform* getGun() 
-    { 
-        return _gun.get(); 
+    const osgSim::DOFTransform* getGun() const
+    {
+        return _gun.get();
     }
 
 protected:
-	osg::ref_ptr<osgSim::DOFTransform> _turret;
-	osg::ref_ptr<osgSim::DOFTransform> _gun;
+    Type _type;
+
+    osg::ref_ptr<osgSim::DOFTransform> _turret;
+    osg::ref_ptr<osgSim::DOFTransform> _gun;
 
     // Temporary holding values during articulation.
     double _azimuth, _elevation;
 };
 
-class TankVisitor : public osg::NodeVisitor 
+class TankVisitor : public osg::NodeVisitor
 {
 public:
     TankVisitor(const std::string& turret, const std::string& gun):
         osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
         _nameTurret(turret),
-        _nameGun(gun) 
+        _nameGun(gun)
     {
     }
 
-	virtual void apply(osg::Transform& t) override
+    virtual void apply(osg::Transform& t) override
     {
-		if(t.getName() == _nameTurret) 
+        if (t.getName() == _nameTurret)
         {
             _turret = &t;
         }
-		else if(t.getName() == _nameGun)
+
+        else if (t.getName() == _nameGun)
         {
             _gun = &t;
         }
 
-		traverse(t);
-	}
+        traverse(t);
+    }
 
-	std::unique_ptr<Tank> getTank() 
+    std::unique_ptr<Tank> getTank(Tank::Type type)
     {
-		return std::unique_ptr<Tank>(new Tank(_turret.get(), _gun.get()));
-	}
+        return std::unique_ptr<Tank>(new Tank(type, _turret.get(), _gun.get()));
+    }
 
 protected:
-	std::string _nameTurret;
-	std::string _nameGun;
+    std::string _nameTurret;
+    std::string _nameGun;
 
-	osg::ref_ptr<osg::Transform> _turret;
-	osg::ref_ptr<osg::Transform> _gun;
+    osg::ref_ptr<osg::Transform> _turret;
+    osg::ref_ptr<osg::Transform> _gun;
 };
