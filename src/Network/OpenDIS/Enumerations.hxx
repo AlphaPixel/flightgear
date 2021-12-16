@@ -15,7 +15,7 @@ enum class PDUType : std::uint8_t
 enum class EntityKind : std::uint8_t
 {
     OTHER = 0,
-    PLATFORM= 1,
+    PLATFORM = 1,
     MUNITION = 2,
     LIFE_FORM = 3,
     ENVIRONMENTAL = 4,

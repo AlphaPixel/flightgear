@@ -9,6 +9,7 @@ set(HEADERS
     EntityManager.hxx
     Frame.hxx
     Math.hxx
+    Tank.hxx
     UnitTypes.hxx
 )
 

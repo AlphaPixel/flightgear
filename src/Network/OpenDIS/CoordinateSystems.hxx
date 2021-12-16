@@ -14,13 +14,6 @@
 
 #include "UnitTypes.hxx"
 
-void CalculateNED(double latitudeRadians, double longitudeRadians, SGVec3d &N, SGVec3d &E, SGVec3d &D);
-void RotateFrame(const DIS::Orientation &rot, const SGVec3d &x0, const SGVec3d &y0, const SGVec3d &z0, SGVec3d &x3, SGVec3d &y3, SGVec3d &z3);
-void CalculateOrientedECEFAxes(const DIS::Orientation &ecef, SGVec3d &x3, SGVec3d &y3, SGVec3d &z3);
-void CalculateEulerAnglesBetweenFrames(const SGVec3d &x0, const SGVec3d &y0, const SGVec3d &z0, const SGVec3d &x3, const SGVec3d &y3, const SGVec3d &z3, double &psi, double &theta, double &phi);
-void ECEFtoLLA(const DIS::Vector3Double &ecef, double &latitude, double &longitude, double &altitude_in_meters);
-void ECEFtoHPR(const DIS::Orientation &ecef, double latitude, double longitude, double &heading, double &pitch, double &roll);
-
 class LLA;
 
 class ECEF 

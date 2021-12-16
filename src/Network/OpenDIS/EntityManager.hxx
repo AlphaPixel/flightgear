@@ -9,7 +9,13 @@
 #include <memory>
 
 #include "PDUHandlers.hxx"
+#include "Tank.hxx"
+
 #include "Main/fg_props.hxx"
+
+// Forward declaration
+class EntityLLA;
+class Angle;
 
 // EntityIDCompare - custom comparison functor for std::map<>
 struct EntityIDCompare 
@@ -69,11 +75,25 @@ private:
     {
         DIS::EntityStatePdu m_mostRecentPdu;
         size_t m_modelIndex;
+        mutable std::unique_ptr<Tank> m_tank;   // May be null if not a tank.
 
         Entity(const DIS::EntityStatePdu &mostRecentPdu, size_t modelIndex)
             : m_mostRecentPdu(mostRecentPdu)
             , m_modelIndex(modelIndex)
         {
+        }
+
+        Entity(const Entity &copy)
+        {
+            *this = copy;
+        }
+
+        Entity & operator = (const Entity &copy)
+        {
+            m_mostRecentPdu = copy.m_mostRecentPdu;
+            m_modelIndex = copy.m_modelIndex;
+            m_tank = std::move(copy.m_tank);
+            return *this;
         }
     };
 
@@ -95,5 +115,5 @@ private:
     std::vector<size_t> m_availableModels_UH60;
 
     // EntityID -> Entity map
-    std::map<DIS::EntityID, Entity, EntityIDCompare> m_entityMap;
+    std::map<DIS::EntityID, std::unique_ptr<Entity>, EntityIDCompare> m_entityMap;
 };

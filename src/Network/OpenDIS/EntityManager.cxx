@@ -8,6 +8,7 @@
 
 #include <Main/fg_props.hxx>
 #include <Model/modelmgr.hxx>
+#include <simgear/scene/model/placement.hxx>
 #include <FDM/flight.hxx>
 #include <FDM/fdm_shell.hxx>
 
@@ -133,7 +134,7 @@ void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
     }
     else
     {
-        UpdateEntityInScene((*i).second, entityPDU);
+        UpdateEntityInScene(*(*i).second, entityPDU);
     }
 
     RemoveExpiredEntities();
@@ -186,13 +187,16 @@ void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
 {
     std::unique_ptr<Entity> entity;
+    bool isTank = false;
     if (T72Tank::matches(entityPDU.getEntityType()))
     {
         entity = CreateT72(entityPDU);
+        isTank = true;
     }
     else if (M1AbramsTank::matches(entityPDU.getEntityType()))
     {
         entity = CreateM1(entityPDU);
+        isTank = true;
     }
     else if (AH64ApacheHelicopter::matches(entityPDU.getEntityType()))
     {
@@ -206,91 +210,134 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
     // If an entity was created above, add it to the map
     if (entity)
     {
-        m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), *entity));
+        if (isTank)
+        {
+            auto mmss = globals->get_subsystem("model-manager");
+            auto mm = dynamic_cast<FGModelMgr*>(mmss);
+
+            auto modelInstances = mm->getInstances();
+            auto model = modelInstances[entity->m_modelIndex]->model;
+            auto subgraph = model->getSceneGraph();
+
+            TankVisitor tv("turret", "gun");
+            subgraph->traverse(tv);
+
+            osg::ref_ptr<osgSim::DOFTransform> turret, canon;
+
+            entity->m_tank = tv.getTank();
+        }
+        m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
     }
 }
 
+enum class ParamTypeMetric : int
+{
+    // From DIS
+    Azimuth = 11,
+    Elevation = 13,
+    Rotation = 15,
+};
+
 void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePdu& entityPDU)
 {
-    auto mmss = globals->get_subsystem("model-manager");
-    auto mm = dynamic_cast<FGModelMgr*>(mmss);
+   // Get the lat/lon/altitude from the PDU
+    ECEF entityECEF(entityPDU.getEntityLocation());
+    LLA entityLLA(entityECEF);
 
-    auto modelInstances = mm->getInstances();
-    if (entity.m_modelIndex < modelInstances.size())
+    // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
     {
-        // Get the lat/lon/altitude from the PDU
-        ECEF entityECEF(entityPDU.getEntityLocation());
-        LLA entityLLA(entityECEF);
-
-        // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
+        auto position = SGGeod::fromDegFt(
+            entityLLA.GetLongitude().inDegrees(), 
+            entityLLA.GetLatitude().inDegrees(),
+            entityLLA.GetAltitude().inFeet());
+        auto groundLevelInFeet = GetGroundLevelInFeet(position);
+        if (entityLLA.GetAltitude().inFeet() < groundLevelInFeet)
         {
-            auto position = SGGeod::fromDegFt(
-                entityLLA.GetLongitude().inDegrees(), 
-                entityLLA.GetLatitude().inDegrees(),
-                entityLLA.GetAltitude().inFeet());
-            auto groundLevelInFeet = GetGroundLevelInFeet(position);
-            if (entityLLA.GetAltitude().inFeet() < groundLevelInFeet)
-            {
-                entityLLA.SetAltitude(Distance::fromFeet(groundLevelInFeet));
-            }
+            entityLLA.SetAltitude(Distance::fromFeet(groundLevelInFeet));
         }
+    }
 
-        // 
-        // Calculate orientation (Euler angles from the NED frame) so Flight Gear can position it properly.
-        //
+    // 
+    // Calculate orientation (Euler angles from the NED frame) so Flight Gear can position it properly.
+    //
 
-        // Step 1 - Create a frame that represents the entity orientation in ECEF space.  It starts equal to the base ECEF frame.
-        auto entityOrientation = Frame::fromECEFBase();
+    // Step 1 - Create a frame that represents the entity orientation in ECEF space.  It starts equal to the base ECEF frame.
+    auto entityOrientation = Frame::fromECEFBase();
 
-        // Step 2 - Rotate the entity orientation frame around the ECEF axes
-        //          by the Euler angles stored in the incoming DIS PDU.  Also, record
-        //          the intermediate from the rotation so it can be used later when
-        //          determining the Euler angles.
-        Frame intermediate = Frame::zero();
-        entityOrientation.rotate(entityPDU.getEntityOrientation(), &intermediate);
+    // Step 2 - Rotate the entity orientation frame around the ECEF axes
+    //          by the Euler angles stored in the incoming DIS PDU.  Also, record
+    //          the intermediate from the rotation so it can be used later when
+    //          determining the Euler angles.
+    Frame intermediate = Frame::zero();
+    entityOrientation.rotate(entityPDU.getEntityOrientation(), &intermediate);
 
-        // Step 3 - Calculate the NED frame located at the entity's location.  This frame will be
-        //          used as the reference frame when calculating the Euler angles relative to the
-        //          entity's frame.
-        const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
+    // Step 3 - Calculate the NED frame located at the entity's location.  This frame will be
+    //          used as the reference frame when calculating the Euler angles relative to the
+    //          entity's frame.
+    const auto baseNED = Frame::fromLatLon(entityLLA.GetLatitude(), entityLLA.GetLongitude());
 
-        // Step 4 = Calculate the Euler angles between the base NED and the rotated entity NED.
-        const auto eulers = Frame::GetEulerAngles(baseNED, intermediate, entityOrientation);
+    // Step 4 = Calculate the Euler angles between the base NED and the rotated entity NED.
+    const auto eulers = Frame::GetEulerAngles(baseNED, intermediate, entityOrientation);
 
-        const double heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
-        const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
-      
+    const double heading = Angle::fromRadians(eulers.getPsi()).inDegrees();
+    const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
+
 #if 1   // TODO/HACK: Fix this 180 degree kludge.  (Due to NED pointing down instead of UP?)     
-        const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
+    const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
 #endif
 
-        // Set the values in the property system.
-        const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
+    // Set the values in the property system.
+    const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
 
-        fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
-        fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
-        fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
+    fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
+    fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
+    fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
 
-        fgSetDouble(propertyPath + "/heading-deg", heading);
-        fgSetDouble(propertyPath + "/pitch-deg", pitch);
-        fgSetDouble(propertyPath + "/roll-deg", roll);
+    fgSetDouble(propertyPath + "/heading-deg", heading);
+    fgSetDouble(propertyPath + "/pitch-deg", pitch);
+    fgSetDouble(propertyPath + "/roll-deg", roll);
+
+    // Handle any articulation parameters.
+    if (entity.m_tank)
+    {
+        auto articulationParameters = entityPDU.getArticulationParameters();
+        if (!articulationParameters.empty())
+        {
+            entity.m_tank->beginArticulation();
+            for (const auto articulationParameter : articulationParameters)
+            {
+                auto paramTypeMetric = articulationParameter.getParameterType() % 32;
+
+                if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Azimuth))
+                {
+                    // NOTE: We assume the azimuth is for the turret.
+                    entity.m_tank->setAzimuth(articulationParameter.getParameterValue());
+                }
+                else if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Elevation))
+                {
+                    // NOTE: We assume the elevation is for the cannon.
+                    entity.m_tank->setElevation(articulationParameter.getParameterValue());
+                }
+            }
+            entity.m_tank->endArticulation();
+        }
+    }
 
 #ifndef NDEBBUG
-        SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
-            << std::to_string(entityPDU.getEntityID().getEntity())
-            << ","
-            << std::to_string(entityLLA.GetLatitude().inDegrees()) 
-            << "," 
-            << std::to_string(entityLLA.GetLongitude().inDegrees()) 
-            << ",     " 
-            << std::to_string(heading)
-            << ","
-            << std::to_string(pitch)
-            << ","
-            << std::to_string(roll)
-        );
-#endif        
-    }
+    SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
+        << std::to_string(entityPDU.getEntityID().getEntity())
+        << ","
+        << std::to_string(entityLLA.GetLatitude().inDegrees()) 
+        << "," 
+        << std::to_string(entityLLA.GetLongitude().inDegrees()) 
+        << ",     " 
+        << std::to_string(heading)
+        << ","
+        << std::to_string(pitch)
+        << ","
+        << std::to_string(roll)
+    );
+#endif
 }
 
 void EntityManager::RemoveExpiredEntities()
