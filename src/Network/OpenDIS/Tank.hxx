@@ -49,12 +49,13 @@ public:
             _gun->setCurrentHPR(osg::Vec3(0.0, _elevation, 0.0));
         }
 
-        // M1 "heading" is Z, "pitch" is -X.
+        // M1 "heading" is Z, "pitch" is X.
         // Both _turret and _gun must be set for heading/azimuth; pitch/elevation is only
         // applied to the _gun.
         else
         {
-            // TODO: Test and confirm that M1 behavior above matches FG.
+            _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth));
+            _gun->setCurrentHPR(osg::Vec3(_elevation, 0.0, _azimuth));
         }
     }
 
