@@ -115,5 +115,8 @@ private:
     std::vector<size_t> m_availableModels_UH60;
 
     // EntityID -> Entity map
-    std::map<DIS::EntityID, std::unique_ptr<Entity>, EntityIDCompare> m_entityMap;
+    std::map<DIS::EntityID, std::shared_ptr<Entity>, EntityIDCompare> m_entityMap;
+
+    // Misc
+    bool m_fixGroundLevel;
 };

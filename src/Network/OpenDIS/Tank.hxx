@@ -38,24 +38,27 @@ public:
 
     void endArticulation()
     {
-        // Put azimuth and elevation into HPR
-        // DIS spec says order is: azimuth -> elevation -> rotation (which we're not handling)
-        // Those are standard Euler angle ordering.
-
-        // T72 "heading" is X, "pitch" is Y.
-        if (_type == Type::T72)
+        if (_turret && _gun)
         {
-            _turret->setCurrentHPR(osg::Vec3(_azimuth, 0.0, 0.0));
-            _gun->setCurrentHPR(osg::Vec3(0.0, _elevation, 0.0));
-        }
+            // Put azimuth and elevation into HPR
+            // DIS spec says order is: azimuth -> elevation -> rotation (which we're not handling)
+            // Those are standard Euler angle ordering.
 
-        // M1 "heading" is Z, "pitch" is X.
-        // Both _turret and _gun must be set for heading/azimuth; pitch/elevation is only
-        // applied to the _gun.
-        else
-        {
-            _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth));
-            _gun->setCurrentHPR(osg::Vec3(_elevation, 0.0, _azimuth));
+            // T72 "heading" is X, "pitch" is Y.
+            if (_type == Type::T72)
+            {
+                _turret->setCurrentHPR(osg::Vec3(_azimuth, 0.0, 0.0));
+                _gun->setCurrentHPR(osg::Vec3(0.0, _elevation, 0.0));
+            }
+
+            // M1 "heading" is Z, "pitch" is X.
+            // Both _turret and _gun must be set for heading/azimuth; pitch/elevation is only
+            // applied to the _gun.
+            else
+            {
+                _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth));
+                _gun->setCurrentHPR(osg::Vec3(_elevation, 0.0, _azimuth));
+            }
         }
     }
 

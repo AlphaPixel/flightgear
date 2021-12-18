@@ -111,6 +111,8 @@ bool FGOpenDIS::open()
 
 bool FGOpenDIS::process() 
 {
+	const bool paused = fgGetBool("/sim/freeze/master",true) | fgGetBool("/sim/freeze/clock",true);
+
     SGIOChannel *io = get_io_channel();
 
     if(get_direction() == SG_IO_OUT) 
@@ -132,7 +134,7 @@ bool FGOpenDIS::process()
 			if (length > 0)
 			{
 				m_ioBuffer.resize(length);
-				if(!parse_message()) 
+				if(!paused && !parse_message()) 
 				{
 					SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
 				}

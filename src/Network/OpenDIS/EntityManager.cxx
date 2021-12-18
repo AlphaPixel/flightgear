@@ -31,6 +31,7 @@ static double GetGroundLevelInFeet(const SGGeod& position)
 
 EntityManager::EntityManager(DIS::EntityStatePdu ownship)
     : m_ownship(ownship)
+    , m_fixGroundLevel(false)
 {
     // Set up model availibility arrays
     size_t globalModelIndex = 0;
@@ -50,6 +51,8 @@ EntityManager::EntityManager(DIS::EntityStatePdu ownship)
     {
         m_availableModels_T72.push_back(globalModelIndex + modelIndex);
     }
+
+    m_fixGroundLevel = fgGetBool("/sim/dis/fixgroundlevel", false);
 
     auto models = fgGetNode("/models");
 
@@ -247,6 +250,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     LLA entityLLA(entityECEF);
 
     // NOTE/HACK: If the altitude given is below the actual ground, adjust the altitude to put it on the ground.
+    if (m_fixGroundLevel)
     {
         auto position = SGGeod::fromDegFt(
             entityLLA.GetLongitude().inDegrees(), 
@@ -285,7 +289,8 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     const double pitch   = Angle::fromRadians(eulers.getTheta()).inDegrees();
 
 #if 1   // TODO/HACK: Fix this 180 degree kludge.  (Due to NED pointing down instead of UP?)     
-    const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
+    //const double roll    = 180 + Angle::fromRadians(eulers.getPhi()).inDegrees();
+    const double roll    = 0;
 #endif
 
     // Set the values in the property system.
@@ -300,6 +305,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     fgSetDouble(propertyPath + "/roll-deg", roll);
 
     // Handle any articulation parameters.
+#if 0
     if (entity.m_tank)
     {
         auto articulationParameters = entityPDU.getArticulationParameters();
@@ -324,6 +330,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
             entity.m_tank->endArticulation();
         }
     }
+#endif
 
 #ifndef NDEBBUG
     SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
@@ -427,20 +434,17 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 void EntityManager::PerformExtra()
 {
 #if 0 // TODO: Simple test logic, remove before shipping
-    auto mmss = globals->get_subsystem("model-manager");
-    auto mm = dynamic_cast<FGModelMgr*>(mmss);
-
-    auto modelInstances = mm->getInstances();
-
-    for (size_t modelIndex = 0; modelIndex < modelInstances.size(); ++modelIndex)
+    for (auto entityPair : m_entityMap)
     {
-        const std::string propertyPath("/models/model" + (modelIndex == 0 ? "" : ("[" + std::to_string(modelIndex) + "]")));
-        auto specificPropertyPath = propertyPath + "/heading-deg";
-        if (fgHasNode(specificPropertyPath))
+        auto entity = entityPair.second;
+
+        if (entity->m_tank)
         {
-            auto value = fgGetDouble(specificPropertyPath);
-            value += 5;
-            fgSetDouble(specificPropertyPath, value);
+            entity->m_tank->beginArticulation();
+
+            entity->m_tank->setAzimuth(Angle::fromDegrees(45).inRadians());
+
+            entity->m_tank->endArticulation();
         }
     }
 #endif    
