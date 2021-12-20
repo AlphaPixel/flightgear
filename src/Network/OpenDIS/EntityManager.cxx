@@ -223,9 +223,7 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
             auto subgraph = model->getSceneGraph();
 
             TankVisitor tv("turret", "gun");
-            subgraph->traverse(tv);
-
-            osg::ref_ptr<osgSim::DOFTransform> turret, canon;
+            subgraph->accept(tv);
 
             entity->m_tank = tv.getTank(
                 T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
