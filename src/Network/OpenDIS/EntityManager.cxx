@@ -16,6 +16,8 @@ static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
 static const size_t modelCount_T72 = 11;
 
+#define PRECREATE_ENTITIES
+
 static double GetGroundLevelInFeet(const SGGeod& position)
 {
     double groundLevel = 0.0;
@@ -225,6 +227,8 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
             TankVisitor tv("turret", "gun");
             subgraph->accept(tv);
 
+            osg::ref_ptr<osgSim::DOFTransform> turret, canon;
+
             entity->m_tank = tv.getTank(
                 T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
             );
@@ -294,6 +298,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     // Set the values in the property system.
     const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
 
+#ifndef PRECREATE_ENTITIES
     fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
     fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
     fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
@@ -301,6 +306,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     fgSetDouble(propertyPath + "/heading-deg", heading);
     fgSetDouble(propertyPath + "/pitch-deg", pitch);
     fgSetDouble(propertyPath + "/roll-deg", roll);
+#endif
 
     // Handle any articulation parameters.
 #if 0
@@ -331,7 +337,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
 #endif
 
 #ifndef NDEBBUG
-    SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
+    SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
         << std::to_string(entityPDU.getEntityID().getEntity())
         << ","
         << std::to_string(entityLLA.GetLatitude().inDegrees()) 
@@ -431,7 +437,31 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 #ifndef NDEBUG
 void EntityManager::PerformExtra()
 {
-#if 0 // TODO: Simple test logic, remove before shipping
+#if 1 // TODO: Simple test logic, remove before shipping
+#ifdef PRECREATE_ENTITIES
+    static bool init = false;
+    if (!init)
+    {
+        init = true;
+        for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
+        {
+            DIS::EntityStatePdu entityPDU;
+            entityPDU.setEntityID(DIS::EntityID());
+            entityPDU.setEntityType(M1AbramsTank(Specific_US_M1_ABRAMS::M1));
+            AddEntityToScene(entityPDU);
+        }
+
+        for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
+        {
+            DIS::EntityStatePdu entityPDU;
+            entityPDU.setEntityID(DIS::EntityID());
+            entityPDU.setEntityType(T72Tank(Specific_T72::T72));
+            AddEntityToScene(entityPDU);
+        }
+    }
+#endif
+
+    static double azimuth = 0.0; // Degrees
     for (auto entityPair : m_entityMap)
     {
         auto entity = entityPair.second;
@@ -440,11 +470,13 @@ void EntityManager::PerformExtra()
         {
             entity->m_tank->beginArticulation();
 
-            entity->m_tank->setAzimuth(Angle::fromDegrees(45).inRadians());
+            entity->m_tank->setAzimuth(Angle::fromDegrees(azimuth).inRadians());
 
             entity->m_tank->endArticulation();
         }
     }
+
+    azimuth += 2.0;
 #endif    
 }
 #endif // !NDEBUG

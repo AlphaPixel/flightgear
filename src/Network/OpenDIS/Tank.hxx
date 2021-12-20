@@ -106,12 +106,13 @@ public:
 
     virtual void apply(osg::Transform& t) override
     {
-        if (t.getName() == _nameTurret)
+        const auto transformName = t.getName();
+        if (transformName == _nameTurret)
         {
             _turret = &t;
         }
 
-        else if (t.getName() == _nameGun)
+        else if (transformName == _nameGun)
         {
             _gun = &t;
         }
