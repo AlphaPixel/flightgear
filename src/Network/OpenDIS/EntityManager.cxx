@@ -232,8 +232,20 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
             entity->m_tank = tv.getTank(
                 T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
             );
+
+            // If the tank object failed to create, fail the 
+            // creation of the entire entity.
+            //
+            if (!entity->m_tank)
+            {
+                entity = nullptr;
+            }
         }
-        m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
+
+        if (entity)
+        {
+            m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
+        }
     }
 }
 

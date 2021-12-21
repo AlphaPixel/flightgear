@@ -122,7 +122,14 @@ public:
 
     std::unique_ptr<Tank> getTank(Tank::Type type)
     {
-        return std::unique_ptr<Tank>(new Tank(type, _turret.get(), _gun.get()));
+        if (_turret.get() && _gun.get())
+        {
+            return std::unique_ptr<Tank>(new Tank(type, _turret.get(), _gun.get()));
+        }
+        else
+        {
+            return std::unique_ptr<Tank>();
+        }
     }
 
 protected:
