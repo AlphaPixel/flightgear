@@ -13,12 +13,15 @@
 #include <osgParticle/SmokeTrailEffect>
 #include <osgParticle/FireEffect>
 #include <osgViewer/Viewer>
+#include "UnitTypes.hxx"
+#include <assert.h>
 
 class Tank
 {
 public:
     enum class Type
     {
+        UNKNOWN,
         T72,
         M1
     };
@@ -28,6 +31,7 @@ public:
         _turret(dynamic_cast<osgSim::DOFTransform*>(turret)),
         _gun(dynamic_cast<osgSim::DOFTransform*>(gun))
     {
+        assert(type != Type::UNKNOWN);
     }
 
     void beginArticulation()
@@ -47,8 +51,8 @@ public:
             // T72 "heading" is X, "pitch" is Y.
             if (_type == Type::T72)
             {
-                _turret->setCurrentHPR(osg::Vec3(_azimuth, 0.0, 0.0));
-                _gun->setCurrentHPR(osg::Vec3(0.0, _elevation, 0.0));
+                _turret->setCurrentHPR(osg::Vec3(_azimuth.inRadians(), 0.0, 0.0));
+                _gun->setCurrentHPR(osg::Vec3(0.0, _elevation.inRadians(), 0.0));
             }
 
             // M1 "heading" is Z, "pitch" is X.
@@ -56,19 +60,20 @@ public:
             // applied to the _gun.
             else
             {
-                _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth));
-                _gun->setCurrentHPR(osg::Vec3(_elevation, 0.0, _azimuth));
+                _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth.inRadians()));
+                _gun->setCurrentHPR(osg::Vec3(_elevation.inRadians(), 0.0, _azimuth.inRadians()));
             }
         }
     }
 
-    void setAzimuth(double azimuth)
+    void setAzimuth(Angle azimuth)
     {
         // Heading of the turret (in radians) relative to the local Z axis basis vector (points down)
         _azimuth = azimuth;
     }
 
-    void setElevation(double elevation)
+    // setElevation()
+    void setElevation(Angle elevation)
     {
         // Elevation of main gun (in radians) relative to the local Y axis basis vector (points right)
         _elevation = elevation;
@@ -84,6 +89,11 @@ public:
         return _gun.get();
     }
 
+    Type getType() const
+    {
+        return _type;
+    }
+
 protected:
     Type _type;
 
@@ -91,7 +101,7 @@ protected:
     osg::ref_ptr<osgSim::DOFTransform> _gun;
 
     // Temporary holding values during articulation.
-    double _azimuth, _elevation;
+    Angle _azimuth, _elevation;
 };
 
 class TankVisitor : public osg::NodeVisitor

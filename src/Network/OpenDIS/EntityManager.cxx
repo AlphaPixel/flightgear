@@ -244,7 +244,8 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
 
         if (entity)
         {
-            m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
+            std::shared_ptr<Entity> sharedEntity(std::move(entity));
+            m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), sharedEntity));
         }
     }
 }
@@ -454,40 +455,65 @@ void EntityManager::PerformExtra()
     static bool init = false;
     if (!init)
     {
+        unsigned short entityNumber = 1;
         init = true;
         for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
         {
             DIS::EntityStatePdu entityPDU;
-            entityPDU.setEntityID(DIS::EntityID());
+            auto entityID = DIS::EntityID();
+            entityID.setEntity(entityNumber);
+            entityPDU.setEntityID(entityID);
             entityPDU.setEntityType(M1AbramsTank(Specific_US_M1_ABRAMS::M1));
             AddEntityToScene(entityPDU);
+
+            ++entityNumber;
         }
 
         for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
         {
             DIS::EntityStatePdu entityPDU;
-            entityPDU.setEntityID(DIS::EntityID());
+            auto entityID = DIS::EntityID();
+            entityID.setEntity(entityNumber);
+            entityPDU.setEntityID(entityID);
             entityPDU.setEntityType(T72Tank(Specific_T72::T72));
             AddEntityToScene(entityPDU);
+
+            ++entityNumber;
         }
     }
 #endif
 
     static double azimuth = 0.0; // Degrees
+    static double elevation = 0.0;
+    static double elevationDelta = 1.0;
+    auto currentType = Tank::Type::UNKNOWN;
+
     for (auto entityPair : m_entityMap)
     {
         auto entity = entityPair.second;
 
         if (entity->m_tank)
         {
-            entity->m_tank->beginArticulation();
+            // BUGBUG: Testing - Only hit the first type of each tank.
+            if (entity->m_tank->getType() != currentType)
+            {
+                currentType = entity->m_tank->getType();
 
-            entity->m_tank->setAzimuth(Angle::fromDegrees(azimuth).inRadians());
+                entity->m_tank->beginArticulation();
 
-            entity->m_tank->endArticulation();
+                entity->m_tank->setAzimuth(Angle::fromDegrees(azimuth).inRadians());
+                entity->m_tank->setElevation(Angle::fromDegrees(elevation).inRadians());
+                
+                entity->m_tank->endArticulation();
+            }
         }
     }
 
+    elevation += elevationDelta;
+    if ((elevation > 45 && elevationDelta > 0) || (elevation < -10 && elevationDelta < 0))
+    {
+        elevationDelta *= -1.0;
+    }
     azimuth += 2.0;
 #endif    
 }

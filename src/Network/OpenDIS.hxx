@@ -47,6 +47,7 @@ public:
 private:
     void init_ownship();
     bool process_outgoing();
+    bool simulation_ready() const;
 
     std::vector<char> m_ioBuffer;
     std::unique_ptr<DIS::IncomingMessage> m_incomingMessage;

@@ -109,6 +109,34 @@ bool FGOpenDIS::open()
     return openedSuccessfully;
 }
 
+bool FGOpenDIS::simulation_ready() const
+{
+	bool simulationReady = false;
+	const bool fdmInitialized = fgGetBool("/sim/fdm-initialized", false);
+	const time_t simulationSettleTimeInSeconds = 3;
+
+	if (fdmInitialized)
+	{
+		static bool init = false;
+		static time_t initTime = 0;
+		if (!init)
+		{
+			init = true;
+			initTime = time(NULL);
+		}
+
+		const auto currentTime = time(NULL);
+		const auto elapsedSeconds = difftime(currentTime, initTime);
+
+		if (elapsedSeconds > simulationSettleTimeInSeconds)
+		{
+			simulationReady = true;
+		}
+	}
+
+	return simulationReady;
+}
+
 bool FGOpenDIS::process() 
 {
 	const bool paused = fgGetBool("/sim/freeze/master",true) | fgGetBool("/sim/freeze/clock",true);
@@ -134,7 +162,7 @@ bool FGOpenDIS::process()
 			if (length > 0)
 			{
 				m_ioBuffer.resize(length);
-				if(!paused && !parse_message()) 
+				if(simulation_ready() && !paused && !parse_message()) 
 				{
 					SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
 				}
@@ -155,7 +183,10 @@ bool FGOpenDIS::process()
 
 #ifndef NDEBUG
 	// TODO: Remove before shipping
-	m_entityManager->PerformExtra();
+	if (simulation_ready())
+	{
+		m_entityManager->PerformExtra();
+	}
 #endif	
 
 	return process_outgoing();
