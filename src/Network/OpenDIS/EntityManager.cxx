@@ -16,7 +16,7 @@ static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
 static const size_t modelCount_T72 = 11;
 
-#define PRECREATE_ENTITIES
+#undef PRECREATE_ENTITIES
 
 static double GetGroundLevelInFeet(const SGGeod& position)
 {
@@ -215,32 +215,32 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
     // If an entity was created above, add it to the map
     if (entity)
     {
-        if (isTank)
-        {
-            auto mmss = globals->get_subsystem("model-manager");
-            auto mm = dynamic_cast<FGModelMgr*>(mmss);
+        // if (isTank)
+        // {
+        //     auto mmss = globals->get_subsystem("model-manager");
+        //     auto mm = dynamic_cast<FGModelMgr*>(mmss);
 
-            auto modelInstances = mm->getInstances();
-            auto model = modelInstances[entity->m_modelIndex]->model;
-            auto subgraph = model->getSceneGraph();
+        //     auto modelInstances = mm->getInstances();
+        //     auto model = modelInstances[entity->m_modelIndex]->model;
+        //     auto subgraph = model->getSceneGraph();
 
-            TankVisitor tv("turret", "gun");
-            subgraph->accept(tv);
+        //     TankVisitor tv("turret", "gun");
+        //     subgraph->accept(tv);
 
-            osg::ref_ptr<osgSim::DOFTransform> turret, canon;
+        //     osg::ref_ptr<osgSim::DOFTransform> turret, canon;
 
-            entity->m_tank = tv.getTank(
-                T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
-            );
+        //     entity->m_tank = tv.getTank(
+        //         T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
+        //     );
 
-            // If the tank object failed to create, fail the 
-            // creation of the entire entity.
-            //
-            if (!entity->m_tank)
-            {
-                entity = nullptr;
-            }
-        }
+        //     // If the tank object failed to create, fail the 
+        //     // creation of the entire entity.
+        //     //
+        //     if (!entity->m_tank)
+        //     {
+        //         entity = nullptr;
+        //     }
+        // }
 
         if (entity)
         {
@@ -450,7 +450,7 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 #ifndef NDEBUG
 void EntityManager::PerformExtra()
 {
-#if 1 // TODO: Simple test logic, remove before shipping
+#if 0 // TODO: Simple test logic, remove before shipping
 #ifdef PRECREATE_ENTITIES
     static bool init = false;
     if (!init)
