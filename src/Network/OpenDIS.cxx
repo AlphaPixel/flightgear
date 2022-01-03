@@ -90,17 +90,17 @@ bool FGOpenDIS::open()
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::ENTITY_STATE), 
-		reinterpret_cast<EntityStatePDUHandler *>(m_entityManager.get())
+		static_cast<EntityStatePDUHandler *>(m_entityManager.get())
 	);
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::FIRE), 
-		reinterpret_cast<FirePDUHandler *>(m_entityManager.get())
+		static_cast<FirePDUHandler *>(m_entityManager.get())
 	);
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::DETONATION), 
-		reinterpret_cast<DetonationPDUHandler *>(m_entityManager.get())
+		static_cast<DetonationPDUHandler *>(m_entityManager.get())
 	);
 
 	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));

@@ -92,6 +92,12 @@ bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
 
 void EntityManager::ProcessEntityStatePDU(const DIS::EntityStatePdu &packet)
 {
+    if (packet.getPduType() != static_cast<unsigned char>(PDUType::ENTITY_STATE))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessEntityStatePDU()");
+        return;
+    }
+
     if (!ShouldIgnoreEntityStatePDU(packet))
     {
         HandleEntityStatePDU(packet);
@@ -147,6 +153,12 @@ void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 
 void EntityManager::ProcessFirePDU(const DIS::FirePdu &firePDU)
 {
+    if (firePDU.getPduType() != static_cast<unsigned char>(PDUType::FIRE))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessFirePDU()");
+        return;
+    }
+
     if (!ShouldIgnoreFirePDU(firePDU))
     {
         HandleFirePDU(firePDU);
@@ -169,6 +181,12 @@ void EntityManager::HandleFirePDU(const DIS::FirePdu &firePDU)
 
 void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
+    if (detonationPDU.getPduType() != static_cast<unsigned char>(PDUType::DETONATION))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessDetonationPDU()");
+        return;
+    }
+
     if (!ShouldIgnoreDetonationPDU(detonationPDU))
     {
         HandleDetonationPDU(detonationPDU);
@@ -177,7 +195,7 @@ void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU
 
 bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
-    return ShouldIgnoreDetonationPDU(detonationPDU);
+    return ShouldIgnorePDU(detonationPDU);
 }
 
 void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU)
