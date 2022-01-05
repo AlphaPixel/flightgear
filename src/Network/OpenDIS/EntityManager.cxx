@@ -17,6 +17,11 @@ static const size_t modelCount_M1 = 14;
 static const size_t modelCount_T72 = 11;
 
 #undef PRECREATE_ENTITIES
+#undef DUMP_PACKETS
+
+#ifdef DUMP_PACKETS
+#include <sys/time.h>
+#endif
 
 static double GetGroundLevelInFeet(const SGGeod& position)
 {
@@ -84,6 +89,42 @@ EntityManager::~EntityManager()
 {
 }
 
+void EntityManager::HandlePDU(const DIS::Pdu& pdu)
+{
+#ifdef DUMP_PACKETS
+    static bool firstPacket = true;
+    static double startSeconds = 0;
+
+    if (firstPacket)
+    {
+        timeval start;
+        gettimeofday(&start, nullptr);
+
+        startSeconds = start.tv_sec + (1/1000000.0 * start.tv_usec);
+
+        firstPacket = false;
+    }
+
+    if (pdu.getPduType() != 1)
+    {
+        timeval currentTime;
+        gettimeofday(&currentTime, nullptr);
+
+        double endSeconds = currentTime.tv_sec + (1/1000000.0 * currentTime.tv_usec);
+        const auto currentDelta = endSeconds - startSeconds;
+
+        static FILE *file = nullptr;
+        if (!file)
+        {
+            file = fopen("dislog.csv", "a");
+        }
+    
+        fprintf(file, "%f,%d\n", (float)currentDelta, (int)pdu.getPduType());
+        fflush(file);
+    }
+#endif    
+}
+
 bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
 {
     // TODO: Check exercise ID matches.
@@ -137,6 +178,8 @@ bool EntityManager::ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& packet
 
 void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 {
+    HandlePDU(entityPDU);
+
     // Find the entity in the scene
     const auto i = m_entityMap.find(entityPDU.getEntityID());
     if (i == m_entityMap.end())
@@ -172,6 +215,8 @@ bool EntityManager::ShouldIgnoreFirePDU(const DIS::FirePdu &firePDU)
 
 void EntityManager::HandleFirePDU(const DIS::FirePdu &firePDU)
 {
+    HandlePDU(firePDU);
+
     auto firingEntity = m_entityMap.find(firePDU.getFiringEntityID());
     if (firingEntity != m_entityMap.end())
     {
@@ -200,6 +245,8 @@ bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &detonati
 
 void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
+    HandlePDU(detonationPDU);
+
     auto targetEntity = m_entityMap.find(detonationPDU.getTargetEntityID());
     if (targetEntity != m_entityMap.end())
     {
@@ -368,19 +415,19 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     }
 
 #ifndef NDEBBUG
-    SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: id="
-        << std::to_string(entityPDU.getEntityID().getEntity())
-        << ", lat="
-        << std::to_string(entityLLA.GetLatitude().inDegrees())
-        << ", lon="
-        << std::to_string(entityLLA.GetLongitude().inDegrees())
-        << " / heading="
-        << std::to_string(heading)
-        << ", pitch="
-        << std::to_string(pitch)
-        << ", roll="
-        << std::to_string(roll)
-    );
+    // SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
+    //     << std::to_string(entityPDU.getEntityID().getEntity())
+    //     << ","
+    //     << std::to_string(entityLLA.GetLatitude().inDegrees()) 
+    //     << "," 
+    //     << std::to_string(entityLLA.GetLongitude().inDegrees()) 
+    //     << ",     " 
+    //     << std::to_string(heading)
+    //     << ","
+    //     << std::to_string(pitch)
+    //     << ","
+    //     << std::to_string(roll)
+    // );
 #endif
 }
 
