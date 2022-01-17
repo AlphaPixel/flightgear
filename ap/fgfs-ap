@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Values for parking lot:
+#
+# --lat=31.14046115
+# --lon=-97.71286535
+
+# 5v5_Tanks-disonly.rewrite.pcapng
+#
+# --site=9750
+# --application=19500
+# --lat=31.220750
+# --lon=-97.827052
+#
+# TA_51-DISonly.second.pcap.rewrite.pcapng
+#
+# --site=22317
+# --application=44635
+# --lat=31.219901350014027
+# --lon=-97.82269212426101
+#
+# TA_51_Tank90Degrees-DISOnly.pcap.rewrite.pcapng
+#
+# --site=1978
+# --application=3956
+#
+# TA_51_TankCircles-DISOnly.pcap.rewrite.pcapng
+#
+# --site=21883
+# --application=43767
+#
+# TA_51_Tank_LiveFire-DISonly.pcap.rewrite.pcapng
+#
+# --site=9571
+# --application=19141
+# --lat=31.223110
+# --lon=-97.827425
+
+# Depending on WHERE you install FlightGear, "fgfs" may NOT be in your path!
+fgfs \
+	--dis=socket,in,10,255.255.255.255,3000,broadcast \
+	--ownship_id=4444 \
+	--heading=270 \
+	--timeofday=morning \
+	--aircraft=ufo \
+	--callsign=Test1 \
+	--fixgroundlevel \
+	--site=9571 \
+	--application=19141 \
+	--lat=31.223110 \
+	--lon=-97.827425 \
+	${*}
+
+#	--disable-ai-traffic=1
+#	--disable-terrasync=1

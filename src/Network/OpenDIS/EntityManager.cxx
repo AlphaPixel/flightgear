@@ -175,7 +175,7 @@ void EntityManager::HandleFirePDU(const DIS::FirePdu &firePDU)
     auto firingEntity = m_entityMap.find(firePDU.getFiringEntityID());
     if (firingEntity != m_entityMap.end())
     {
-        // TODO: Add firing animation to 'firingEntity'
+        firingEntity->second->m_tank->fireEffect();
     }
 }
 
@@ -233,32 +233,28 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
     // If an entity was created above, add it to the map
     if (entity)
     {
-        // if (isTank)
-        // {
-        //     auto mmss = globals->get_subsystem("model-manager");
-        //     auto mm = dynamic_cast<FGModelMgr*>(mmss);
+        if (isTank)
+        {
+            auto mmss = globals->get_subsystem("model-manager");
+            auto mm = dynamic_cast<FGModelMgr*>(mmss);
 
-        //     auto modelInstances = mm->getInstances();
-        //     auto model = modelInstances[entity->m_modelIndex]->model;
-        //     auto subgraph = model->getSceneGraph();
+            auto modelInstances = mm->getInstances();
+            auto model = modelInstances[entity->m_modelIndex]->model;
+            auto subgraph = model->getSceneGraph();
 
-        //     TankVisitor tv("turret", "gun");
-        //     subgraph->accept(tv);
+            TankVisitor tv("turret", "gun");
+            subgraph->accept(tv);
 
-        //     osg::ref_ptr<osgSim::DOFTransform> turret, canon;
+            entity->m_tank = tv.getTank();
 
-        //     entity->m_tank = tv.getTank(
-        //         T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
-        //     );
-
-        //     // If the tank object failed to create, fail the 
-        //     // creation of the entire entity.
-        //     //
-        //     if (!entity->m_tank)
-        //     {
-        //         entity = nullptr;
-        //     }
-        // }
+            // If the tank object failed to create, fail the
+            // creation of the entire entity.
+            //
+            if (!entity->m_tank)
+            {
+                entity = nullptr;
+            }
+        }
 
         if (entity)
         {
@@ -340,7 +336,6 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
 #endif
 
     // Handle any articulation parameters.
-#if 0
     if (entity.m_tank)
     {
         auto articulationParameters = entityPDU.getArticulationParameters();
@@ -354,6 +349,12 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
                 if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Azimuth))
                 {
                     // NOTE: We assume the azimuth is for the turret.
+                    SG_LOG(SG_IO, SG_ALERT, "   Articulation: id="
+                        << entityPDU.getEntityID().getEntity()
+                        << ", azimuth="
+                        << std::fixed << std::setprecision(3) << osg::RadiansToDegrees(articulationParameter.getParameterValue())
+                    );
+
                     entity.m_tank->setAzimuth(articulationParameter.getParameterValue());
                 }
                 else if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Elevation))
@@ -365,20 +366,19 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
             entity.m_tank->endArticulation();
         }
     }
-#endif
 
 #ifndef NDEBBUG
-    SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
+    SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: id="
         << std::to_string(entityPDU.getEntityID().getEntity())
-        << ","
-        << std::to_string(entityLLA.GetLatitude().inDegrees()) 
-        << "," 
-        << std::to_string(entityLLA.GetLongitude().inDegrees()) 
-        << ",     " 
+        << ", lat="
+        << std::to_string(entityLLA.GetLatitude().inDegrees())
+        << ", lon="
+        << std::to_string(entityLLA.GetLongitude().inDegrees())
+        << " / heading="
         << std::to_string(heading)
-        << ","
+        << ", pitch="
         << std::to_string(pitch)
-        << ","
+        << ", roll="
         << std::to_string(roll)
     );
 #endif
@@ -468,7 +468,7 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 #ifndef NDEBUG
 void EntityManager::PerformExtra()
 {
-#if 0 // TODO: Simple test logic, remove before shipping
+// TODO: Simple test logic, remove before shipping
 #ifdef PRECREATE_ENTITIES
     static bool init = false;
     if (!init)
@@ -499,7 +499,6 @@ void EntityManager::PerformExtra()
             ++entityNumber;
         }
     }
-#endif
 
     static double azimuth = 0.0; // Degrees
     static double elevation = 0.0;
@@ -521,7 +520,7 @@ void EntityManager::PerformExtra()
 
                 entity->m_tank->setAzimuth(Angle::fromDegrees(azimuth).inRadians());
                 entity->m_tank->setElevation(Angle::fromDegrees(elevation).inRadians());
-                
+
                 entity->m_tank->endArticulation();
             }
         }
@@ -533,6 +532,6 @@ void EntityManager::PerformExtra()
         elevationDelta *= -1.0;
     }
     azimuth += 2.0;
-#endif    
+#endif
 }
 #endif // !NDEBUG

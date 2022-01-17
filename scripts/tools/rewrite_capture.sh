@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 export CAPTURE_FILE=$1
 
 echo "Reading $CAPTURE_FILE"

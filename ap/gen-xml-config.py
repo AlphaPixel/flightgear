@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+#
+# for I in $(seq 10); do ln -sf T72.osg "T72_$(printf '%02d' $I).osg"; done
+# for I in $(seq 13); do ln -sf M1.osg "M1_$(printf '%02d' $I).osg"; done
 
 from yattag import Doc, indent
 

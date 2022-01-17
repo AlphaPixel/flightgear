@@ -111,32 +111,32 @@ bool FGOpenDIS::open()
 
 bool FGOpenDIS::simulation_ready() const
 {
-	return true;
+	// return true;
 
-	// bool simulationReady = false;
-	// const bool fdmInitialized = fgGetBool("/sim/fdm-initialized", false);
-	// const time_t simulationSettleTimeInSeconds = 3;
+	bool simulationReady = false;
+	const bool fdmInitialized = fgGetBool("/sim/fdm-initialized", false);
+	const time_t simulationSettleTimeInSeconds = 3;
 
-	// if (fdmInitialized)
-	// {
-	// 	static bool init = false;
-	// 	static time_t initTime = 0;
-	// 	if (!init)
-	// 	{
-	// 		init = true;
-	// 		initTime = time(NULL);
-	// 	}
+	if (fdmInitialized)
+	{
+		static bool init = false;
+		static time_t initTime = 0;
+		if (!init)
+		{
+			init = true;
+			initTime = time(NULL);
+		}
 
-	// 	const auto currentTime = time(NULL);
-	// 	const auto elapsedSeconds = difftime(currentTime, initTime);
+		const auto currentTime = time(NULL);
+		const auto elapsedSeconds = difftime(currentTime, initTime);
 
-	// 	if (elapsedSeconds > simulationSettleTimeInSeconds)
-	// 	{
-	// 		simulationReady = true;
-	// 	}
-	// }
+		if (elapsedSeconds > simulationSettleTimeInSeconds)
+		{
+			simulationReady = true;
+		}
+	}
 
-	// return simulationReady;
+	return simulationReady;
 }
 
 bool FGOpenDIS::process() 

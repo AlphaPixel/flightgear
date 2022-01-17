@@ -32,6 +32,8 @@ public:
         _gun(dynamic_cast<osgSim::DOFTransform*>(gun))
     {
         assert(type != Type::UNKNOWN);
+
+        _gun->insertChild(0, new osg::MatrixTransform());
     }
 
     void beginArticulation()
@@ -61,7 +63,7 @@ public:
             else
             {
                 _turret->setCurrentHPR(osg::Vec3(0.0, 0.0, _azimuth.inRadians()));
-                _gun->setCurrentHPR(osg::Vec3(_elevation.inRadians(), 0.0, _azimuth.inRadians()));
+                _gun->setCurrentHPR(osg::Vec3(-_elevation.inRadians(), 0.0, _azimuth.inRadians()));
             }
         }
     }
@@ -79,19 +81,63 @@ public:
         _elevation = elevation;
     }
 
-    const osgSim::DOFTransform* getTurret() const
+    void fireEffect()
     {
-        return _turret.get();
-    }
+        auto pos = osg::Vec3();
 
-    const osgSim::DOFTransform* getGun() const
-    {
-        return _gun.get();
+        /* if (_type == Type::T72)
+        {
+            pos = osg::Vec3(-7.0, 1.5, 1.75) *
+                osg::Matrix::rotate(_azimuth.inRadians(), 0.0, 0.0, 1.0) *
+                osg::Matrix::rotate(_elevation.inRadians(), 0.0, 1.0, 0.0)
+            ;
+        }
+
+        else if(_type == Type::M1)
+        {
+            pos = osg::Vec3(-5.0, 0.0, 1.25) *
+                osg::Matrix::rotate(_azimuth.inRadians(), 0.0, 0.0, 1.0) *
+                osg::Matrix::rotate(_elevation.inRadians(), -1.0, 0.0, 0.0)
+            ;
+        } */
+
+        auto mt = dynamic_cast<osg::MatrixTransform*>(_gun->getChild(0));
+
+        if (mt)
+        {
+            if (mt->getNumChildren()) mt->removeChildren(0, mt->getNumChildren());
+
+            auto effect = new osgParticle::ExplosionEffect(pos, 2.0f, 3.0f);
+            auto geode = new osg::Geode();
+
+            effect->setUseLocalParticleSystem(false);
+            effect->setEmitterDuration(0.1);
+
+            geode->addDrawable(effect->getParticleSystem());
+
+            mt->addChild(effect);
+            mt->addChild(geode);
+        }
     }
 
     Type getType() const
     {
         return _type;
+    }
+
+    osgSim::DOFTransform* getTurret()
+    {
+        return _turret.get();
+    }
+
+    osgSim::DOFTransform* getGun()
+    {
+        return _gun.get();
+    }
+
+    bool valid() const
+    {
+        return (_type != Type::UNKNOWN) && _turret.valid() && _gun.valid();
     }
 
 protected:
@@ -109,6 +155,7 @@ class TankVisitor : public osg::NodeVisitor
 public:
     TankVisitor(const std::string& turret, const std::string& gun):
         osg::NodeVisitor(osg::NodeVisitor::TRAVERSE_ALL_CHILDREN),
+        _type(Tank::Type::UNKNOWN),
         _nameTurret(turret),
         _nameGun(gun)
     {
@@ -117,7 +164,18 @@ public:
     virtual void apply(osg::Transform& t) override
     {
         const auto transformName = t.getName();
-        if (transformName == _nameTurret)
+
+        if (transformName == "T72")
+        {
+            _type = Tank::Type::T72;
+        }
+
+        else if (transformName == "M1")
+        {
+            _type = Tank::Type::M1;
+        }
+
+        else if (transformName == _nameTurret)
         {
             _turret = &t;
         }
@@ -130,11 +188,11 @@ public:
         traverse(t);
     }
 
-    std::unique_ptr<Tank> getTank(Tank::Type type)
+    std::unique_ptr<Tank> getTank()
     {
         if (_turret.get() && _gun.get())
         {
-            return std::unique_ptr<Tank>(new Tank(type, _turret.get(), _gun.get()));
+            return std::unique_ptr<Tank>(new Tank(_type, _turret.get(), _gun.get()));
         }
         else
         {
@@ -143,6 +201,8 @@ public:
     }
 
 protected:
+    Tank::Type _type;
+
     std::string _nameTurret;
     std::string _nameGun;
 
