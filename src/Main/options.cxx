@@ -1817,7 +1817,7 @@ struct OptionDesc {
     {"site",                         true,  OPTION_INT, "/sim/dis/site", false, "", 0},
     {"ownship_id",                   true,  OPTION_INT, "/sim/dis/ownship_id", false, "", 0},
     {"application",                  true,  OPTION_INT, "/sim/dis/application", false, "", 0},
-    {"fixgroundlevel",               true,  OPTION_BOOL, "/sim/dis/fixgroundlevel", false, "", 0},
+    {"fixgroundlevel",               false,  OPTION_BOOL, "/sim/dis/fixgroundlevel", true, "", 0},
 #endif
     {"flarm",                        true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },
     {"garmin",                       true,  OPTION_CHANNEL | OPTION_MULTI, "", false, "", 0 },

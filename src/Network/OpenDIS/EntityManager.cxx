@@ -16,6 +16,13 @@ static const size_t modelCount_UH60 = 6;
 static const size_t modelCount_M1 = 14;
 static const size_t modelCount_T72 = 11;
 
+#undef PRECREATE_ENTITIES
+#undef DUMP_PACKETS
+
+#ifdef DUMP_PACKETS
+#include <sys/time.h>
+#endif
+
 static double GetGroundLevelInFeet(const SGGeod& position)
 {
     double groundLevel = 0.0;
@@ -82,6 +89,42 @@ EntityManager::~EntityManager()
 {
 }
 
+void EntityManager::HandlePDU(const DIS::Pdu& pdu)
+{
+#ifdef DUMP_PACKETS
+    static bool firstPacket = true;
+    static double startSeconds = 0;
+
+    if (firstPacket)
+    {
+        timeval start;
+        gettimeofday(&start, nullptr);
+
+        startSeconds = start.tv_sec + (1/1000000.0 * start.tv_usec);
+
+        firstPacket = false;
+    }
+
+    if (pdu.getPduType() != 1)
+    {
+        timeval currentTime;
+        gettimeofday(&currentTime, nullptr);
+
+        double endSeconds = currentTime.tv_sec + (1/1000000.0 * currentTime.tv_usec);
+        const auto currentDelta = endSeconds - startSeconds;
+
+        static FILE *file = nullptr;
+        if (!file)
+        {
+            file = fopen("dislog.csv", "a");
+        }
+    
+        fprintf(file, "%f,%d\n", (float)currentDelta, (int)pdu.getPduType());
+        fflush(file);
+    }
+#endif    
+}
+
 bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
 {
     // TODO: Check exercise ID matches.
@@ -90,6 +133,12 @@ bool EntityManager::ShouldIgnorePDU(const DIS::Pdu &packet)
 
 void EntityManager::ProcessEntityStatePDU(const DIS::EntityStatePdu &packet)
 {
+    if (packet.getPduType() != static_cast<unsigned char>(PDUType::ENTITY_STATE))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessEntityStatePDU()");
+        return;
+    }
+
     if (!ShouldIgnoreEntityStatePDU(packet))
     {
         HandleEntityStatePDU(packet);
@@ -129,6 +178,8 @@ bool EntityManager::ShouldIgnoreEntityStatePDU(const DIS::EntityStatePdu& packet
 
 void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 {
+    HandlePDU(entityPDU);
+
     // Find the entity in the scene
     const auto i = m_entityMap.find(entityPDU.getEntityID());
     if (i == m_entityMap.end())
@@ -145,6 +196,12 @@ void EntityManager::HandleEntityStatePDU(const DIS::EntityStatePdu& entityPDU)
 
 void EntityManager::ProcessFirePDU(const DIS::FirePdu &firePDU)
 {
+    if (firePDU.getPduType() != static_cast<unsigned char>(PDUType::FIRE))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessFirePDU()");
+        return;
+    }
+
     if (!ShouldIgnoreFirePDU(firePDU))
     {
         HandleFirePDU(firePDU);
@@ -158,15 +215,23 @@ bool EntityManager::ShouldIgnoreFirePDU(const DIS::FirePdu &firePDU)
 
 void EntityManager::HandleFirePDU(const DIS::FirePdu &firePDU)
 {
+    HandlePDU(firePDU);
+
     auto firingEntity = m_entityMap.find(firePDU.getFiringEntityID());
     if (firingEntity != m_entityMap.end())
     {
-        // TODO: Add firing animation to 'firingEntity'
+        firingEntity->second->m_tank->fireEffect();
     }
 }
 
 void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
+    if (detonationPDU.getPduType() != static_cast<unsigned char>(PDUType::DETONATION))
+    {
+        SG_LOG(SG_IO, SG_ALERT, "Entity type mismatch in ProcessDetonationPDU()");
+        return;
+    }
+
     if (!ShouldIgnoreDetonationPDU(detonationPDU))
     {
         HandleDetonationPDU(detonationPDU);
@@ -175,11 +240,13 @@ void EntityManager::ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU
 
 bool EntityManager::ShouldIgnoreDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
-    return ShouldIgnoreDetonationPDU(detonationPDU);
+    return ShouldIgnorePDU(detonationPDU);
 }
 
 void EntityManager::HandleDetonationPDU(const DIS::DetonationPdu &detonationPDU)
 {
+    HandlePDU(detonationPDU);
+
     auto targetEntity = m_entityMap.find(detonationPDU.getTargetEntityID());
     if (targetEntity != m_entityMap.end())
     {
@@ -225,11 +292,22 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
             TankVisitor tv("turret", "gun");
             subgraph->accept(tv);
 
-            entity->m_tank = tv.getTank(
-                T72Tank::matches(entityPDU.getEntityType()) ? Tank::Type::T72 : Tank::Type::M1
-            );
+            entity->m_tank = tv.getTank();
+
+            // If the tank object failed to create, fail the
+            // creation of the entire entity.
+            //
+            if (!entity->m_tank)
+            {
+                entity = nullptr;
+            }
         }
-        m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), std::move(entity)));
+
+        if (entity)
+        {
+            std::shared_ptr<Entity> sharedEntity(std::move(entity));
+            m_entityMap.insert(std::make_pair(entityPDU.getEntityID(), sharedEntity));
+        }
     }
 }
 
@@ -294,6 +372,7 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     // Set the values in the property system.
     const std::string propertyPath("/models/model" + (entity.m_modelIndex == 0 ? "" : ("[" + std::to_string(entity.m_modelIndex) + "]")));
 
+#ifndef PRECREATE_ENTITIES
     fgSetDouble(propertyPath + "/latitude-deg", entityLLA.GetLatitude().inDegrees());
     fgSetDouble(propertyPath + "/longitude-deg", entityLLA.GetLongitude().inDegrees());
     fgSetDouble(propertyPath + "/elevation-ft", entityLLA.GetAltitude().inFeet());
@@ -301,9 +380,9 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
     fgSetDouble(propertyPath + "/heading-deg", heading);
     fgSetDouble(propertyPath + "/pitch-deg", pitch);
     fgSetDouble(propertyPath + "/roll-deg", roll);
+#endif
 
     // Handle any articulation parameters.
-#if 0
     if (entity.m_tank)
     {
         auto articulationParameters = entityPDU.getArticulationParameters();
@@ -317,6 +396,12 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
                 if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Azimuth))
                 {
                     // NOTE: We assume the azimuth is for the turret.
+                    SG_LOG(SG_IO, SG_ALERT, "   Articulation: id="
+                        << entityPDU.getEntityID().getEntity()
+                        << ", azimuth="
+                        << std::fixed << std::setprecision(3) << osg::RadiansToDegrees(articulationParameter.getParameterValue())
+                    );
+
                     entity.m_tank->setAzimuth(articulationParameter.getParameterValue());
                 }
                 else if (paramTypeMetric == static_cast<int>(ParamTypeMetric::Elevation))
@@ -328,22 +413,21 @@ void EntityManager::UpdateEntityInScene(Entity &entity, const DIS::EntityStatePd
             entity.m_tank->endArticulation();
         }
     }
-#endif
 
 #ifndef NDEBBUG
-    SG_LOG(SG_IO, SG_BULK, "Location/Orientation: " 
-        << std::to_string(entityPDU.getEntityID().getEntity())
-        << ","
-        << std::to_string(entityLLA.GetLatitude().inDegrees()) 
-        << "," 
-        << std::to_string(entityLLA.GetLongitude().inDegrees()) 
-        << ",     " 
-        << std::to_string(heading)
-        << ","
-        << std::to_string(pitch)
-        << ","
-        << std::to_string(roll)
-    );
+    // SG_LOG(SG_IO, SG_ALERT, "Location/Orientation: " 
+    //     << std::to_string(entityPDU.getEntityID().getEntity())
+    //     << ","
+    //     << std::to_string(entityLLA.GetLatitude().inDegrees()) 
+    //     << "," 
+    //     << std::to_string(entityLLA.GetLongitude().inDegrees()) 
+    //     << ",     " 
+    //     << std::to_string(heading)
+    //     << ","
+    //     << std::to_string(pitch)
+    //     << ","
+    //     << std::to_string(roll)
+    // );
 #endif
 }
 
@@ -431,20 +515,70 @@ std::unique_ptr<EntityManager::Entity> EntityManager::CreateUH60(const DIS::Enti
 #ifndef NDEBUG
 void EntityManager::PerformExtra()
 {
-#if 0 // TODO: Simple test logic, remove before shipping
+// TODO: Simple test logic, remove before shipping
+#ifdef PRECREATE_ENTITIES
+    static bool init = false;
+    if (!init)
+    {
+        unsigned short entityNumber = 1;
+        init = true;
+        for (size_t modelIndex = 0; modelIndex < modelCount_M1; ++modelIndex) 
+        {
+            DIS::EntityStatePdu entityPDU;
+            auto entityID = DIS::EntityID();
+            entityID.setEntity(entityNumber);
+            entityPDU.setEntityID(entityID);
+            entityPDU.setEntityType(M1AbramsTank(Specific_US_M1_ABRAMS::M1));
+            AddEntityToScene(entityPDU);
+
+            ++entityNumber;
+        }
+
+        for (size_t modelIndex = 0; modelIndex < modelCount_T72; ++modelIndex) 
+        {
+            DIS::EntityStatePdu entityPDU;
+            auto entityID = DIS::EntityID();
+            entityID.setEntity(entityNumber);
+            entityPDU.setEntityID(entityID);
+            entityPDU.setEntityType(T72Tank(Specific_T72::T72));
+            AddEntityToScene(entityPDU);
+
+            ++entityNumber;
+        }
+    }
+
+    static double azimuth = 0.0; // Degrees
+    static double elevation = 0.0;
+    static double elevationDelta = 1.0;
+    auto currentType = Tank::Type::UNKNOWN;
+
     for (auto entityPair : m_entityMap)
     {
         auto entity = entityPair.second;
 
         if (entity->m_tank)
         {
-            entity->m_tank->beginArticulation();
+            // BUGBUG: Testing - Only hit the first type of each tank.
+            if (entity->m_tank->getType() != currentType)
+            {
+                currentType = entity->m_tank->getType();
 
-            entity->m_tank->setAzimuth(Angle::fromDegrees(45).inRadians());
+                entity->m_tank->beginArticulation();
 
-            entity->m_tank->endArticulation();
+                entity->m_tank->setAzimuth(Angle::fromDegrees(azimuth).inRadians());
+                entity->m_tank->setElevation(Angle::fromDegrees(elevation).inRadians());
+
+                entity->m_tank->endArticulation();
+            }
         }
     }
-#endif    
+
+    elevation += elevationDelta;
+    if ((elevation > 45 && elevationDelta > 0) || (elevation < -10 && elevationDelta < 0))
+    {
+        elevationDelta *= -1.0;
+    }
+    azimuth += 2.0;
+#endif
 }
 #endif // !NDEBUG

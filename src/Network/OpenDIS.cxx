@@ -90,23 +90,53 @@ bool FGOpenDIS::open()
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::ENTITY_STATE), 
-		reinterpret_cast<EntityStatePDUHandler *>(m_entityManager.get())
+		static_cast<EntityStatePDUHandler *>(m_entityManager.get())
 	);
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::FIRE), 
-		reinterpret_cast<FirePDUHandler *>(m_entityManager.get())
+		static_cast<FirePDUHandler *>(m_entityManager.get())
 	);
 
 	m_incomingMessage->AddProcessor(
 		static_cast<unsigned char>(PDUType::DETONATION), 
-		reinterpret_cast<DetonationPDUHandler *>(m_entityManager.get())
+		static_cast<DetonationPDUHandler *>(m_entityManager.get())
 	);
 
 	m_outgoingSocket = std::unique_ptr<SGSocket>(new SGSocket("255.255.255.255", "3000", "broadcast"));
 	m_outgoingSocket->open(SGProtocolDir::SG_IO_OUT);
 
     return openedSuccessfully;
+}
+
+bool FGOpenDIS::simulation_ready() const
+{
+	// return true;
+
+	bool simulationReady = false;
+	const bool fdmInitialized = fgGetBool("/sim/fdm-initialized", false);
+	const time_t simulationSettleTimeInSeconds = 3;
+
+	if (fdmInitialized)
+	{
+		static bool init = false;
+		static time_t initTime = 0;
+		if (!init)
+		{
+			init = true;
+			initTime = time(NULL);
+		}
+
+		const auto currentTime = time(NULL);
+		const auto elapsedSeconds = difftime(currentTime, initTime);
+
+		if (elapsedSeconds > simulationSettleTimeInSeconds)
+		{
+			simulationReady = true;
+		}
+	}
+
+	return simulationReady;
 }
 
 bool FGOpenDIS::process() 
@@ -134,7 +164,7 @@ bool FGOpenDIS::process()
 			if (length > 0)
 			{
 				m_ioBuffer.resize(length);
-				if(!paused && !parse_message()) 
+				if(simulation_ready() && !paused && !parse_message()) 
 				{
 					SG_LOG(SG_IO, SG_ALERT, "Error parsing data.");
 				}
@@ -155,7 +185,10 @@ bool FGOpenDIS::process()
 
 #ifndef NDEBUG
 	// TODO: Remove before shipping
-	m_entityManager->PerformExtra();
+	if (simulation_ready())
+	{
+		m_entityManager->PerformExtra();
+	}
 #endif	
 
 	return process_outgoing();

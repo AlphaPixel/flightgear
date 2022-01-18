@@ -54,6 +54,8 @@ private:
     virtual void ProcessDetonationPDU(const DIS::DetonationPdu &detonationPDU) override;
 
 private:
+    void HandlePDU(const DIS::Pdu& pdu);
+
     bool ShouldIgnorePDU(const DIS::Pdu &pdu);
 
     // EntityState PDU Processing
