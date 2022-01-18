@@ -9,7 +9,7 @@ build/src/Main/fgfs \
 	--lon=-97.71213774258472 \
 	--heading=270 \
 	--timeofday=morning \
-	--aircraft=ufo \
+	--aircraft=uh60 \
 	--callsign=Test2 \
 	--config=./models.xml \
 	--data=./ap \
