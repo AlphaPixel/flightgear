@@ -286,20 +286,27 @@ void EntityManager::AddEntityToScene(const DIS::EntityStatePdu& entityPDU)
             auto mm = dynamic_cast<FGModelMgr*>(mmss);
 
             auto modelInstances = mm->getInstances();
-            auto model = modelInstances[entity->m_modelIndex]->model;
-            auto subgraph = model->getSceneGraph();
-
-            TankVisitor tv("turret", "gun");
-            subgraph->accept(tv);
-
-            entity->m_tank = tv.getTank();
-
-            // If the tank object failed to create, fail the
-            // creation of the entire entity.
-            //
-            if (!entity->m_tank)
+            if (modelInstances.size() > entity->m_modelIndex)
             {
-                entity = nullptr;
+                auto model = modelInstances[entity->m_modelIndex]->model;
+                auto subgraph = model->getSceneGraph();
+
+                TankVisitor tv("turret", "gun");
+                subgraph->accept(tv);
+
+                entity->m_tank = tv.getTank();
+
+                // If the tank object failed to create, fail the
+                // creation of the entire entity.
+                //
+                if (!entity->m_tank)
+                {
+                    entity = nullptr;
+                }
+            }
+            else
+            {
+                SG_LOG(SG_IO, SG_ALERT, "No models found - are you missing a --config= entry for models.xml?");
             }
         }
 
